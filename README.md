@@ -327,6 +327,7 @@
             border: 1px solid var(--border);
             border-radius: 8px;
             background: white;
+            position: relative;
         }
 
         .table-container::-webkit-scrollbar {
@@ -354,7 +355,7 @@
             border-radius: 8px;
             overflow: hidden;
             box-shadow: var(--shadow);
-            min-width: 600px;
+            min-width: 800px;
         }
 
         th, td {
@@ -362,12 +363,15 @@
             text-align: left;
             border-bottom: 1px solid var(--border);
             font-size: 0.85rem;
+            white-space: nowrap;
         }
 
         th {
             background: var(--admin-color);
             color: white;
             font-weight: 600;
+            position: sticky;
+            top: 0;
         }
 
         tr:hover {
@@ -819,16 +823,33 @@
         }
 
         /* Main Table */
-        .table-container {
+        .table-container-bulletin {
             flex: 1;
-            overflow: hidden;
+            overflow-x: auto;
             margin-bottom: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+
+        .table-container-bulletin::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .table-container-bulletin::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        .table-container-bulletin::-webkit-scrollbar-thumb {
+            background: var(--accent-color);
+            border-radius: 3px;
         }
 
         .main-table {
             width: 100%;
             border-collapse: collapse;
             font-size: 8px;
+            min-width: 600px;
         }
 
         .main-table th {
@@ -838,6 +859,8 @@
             text-align: center;
             font-weight: 600;
             color: var(--primary-color);
+            position: sticky;
+            top: 0;
         }
 
         .main-table td {
@@ -1870,7 +1893,7 @@
             }
             
             table {
-                min-width: 500px;
+                min-width: 800px;
             }
         }
 
@@ -1957,7 +1980,7 @@
             }
             
             table {
-                min-width: 400px;
+                min-width: 800px;
             }
         }
 
@@ -4914,7 +4937,7 @@
                             </div>
                         </div>
 
-                        <div class="table-container">
+                        <div class="table-container-bulletin">
                             <table class="main-table">
                                 <thead>
                                     <tr>
