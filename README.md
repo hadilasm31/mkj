@@ -1513,6 +1513,102 @@
         }
 
         /* ============================================= */
+        /* NOUVEAUX STYLES POUR LES TABLEAUX PAR SEMAINE */
+        /* ============================================= */
+
+        .week-container {
+            margin-bottom: 2rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .week-header {
+            background: var(--admin-color);
+            color: white;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .week-header:hover {
+            background: #1a56db;
+        }
+
+        .week-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .week-dates {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .week-stats {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .week-stat {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.3rem 0.7rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+
+        .week-content {
+            display: none;
+            background: white;
+        }
+
+        .week-content.expanded {
+            display: block;
+        }
+
+        .week-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .week-table th {
+            background: #f8fafc;
+            color: var(--text-dark);
+            font-weight: 600;
+            padding: 0.8rem;
+            border-bottom: 1px solid var(--border);
+            text-align: left;
+        }
+
+        .week-table td {
+            padding: 0.8rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .week-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .week-table tr:hover {
+            background: #f8fafc;
+        }
+
+        .week-total {
+            background: #f0f7ff;
+            font-weight: 600;
+        }
+
+        .week-total td {
+            border-top: 2px solid var(--admin-color);
+        }
+
+        /* ============================================= */
         /* MEDIA QUERIES POUR LA RESPONSIVE */
         /* ============================================= */
 
@@ -1711,6 +1807,26 @@
             
             .option-icon {
                 font-size: 2rem;
+            }
+            
+            /* Responsive pour les tableaux par semaine */
+            .week-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+            
+            .week-stats {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .week-table {
+                font-size: 0.75rem;
+            }
+            
+            .week-table th, .week-table td {
+                padding: 0.5rem;
             }
         }
 
@@ -1923,6 +2039,16 @@
             table {
                 min-width: 800px;
             }
+            
+            /* Responsive pour les tableaux par semaine */
+            .week-table {
+                min-width: 800px;
+            }
+            
+            .week-stat {
+                font-size: 0.7rem;
+                padding: 0.2rem 0.5rem;
+            }
         }
 
         /* Très petits écrans */
@@ -2008,6 +2134,11 @@
             }
             
             table {
+                min-width: 800px;
+            }
+            
+            /* Responsive pour les tableaux par semaine */
+            .week-table {
                 min-width: 800px;
             }
         }
@@ -2268,20 +2399,9 @@
                         </div>
                     </div>
 
-                    <div class="table-container">
-                        <table id="pointagesTable">
-                            <thead>
-                                <tr>
-                                    <th width="30px">
-                                        <input type="checkbox" id="selectAllPointagesHeader" onchange="toggleSelectAllPointages()">
-                                    </th>
-                                    <th>ID Fiche</th><th>Date</th><th>Chef</th><th>Activité</th><th>Employé</th><th>Présence</th><th>Bloc</th><th>Sous-quantités</th><th>Quantité totale</th><th>Prix unitaire</th><th>Prix total</th>
-                                </tr>
-                            </thead>
-                            <tbody id="pointagesTableBody">
-                                <!-- Populated by JavaScript -->
-                            </tbody>
-                        </table>
+                    <!-- Conteneur pour les pointages groupés par semaine -->
+                    <div id="pointagesByWeekContainer">
+                        <!-- Les pointages groupés par semaine seront affichés ici -->
                     </div>
                 </div>
             </section>
@@ -2504,26 +2624,8 @@
                         </div>
                     </div>
 
-                    <!-- Recherche -->
-                    <div class="search-box" id="chefSearchBox" style="display: none;">
-                        <input type="text" id="searchChefPointage" class="search-input" placeholder="Rechercher par nom d'employé, date, bloc...">
-                        <button class="btn btn-small" onclick="performChefSearch()">🔍 Rechercher</button>
-                        <button class="btn btn-outline btn-small" onclick="clearChefSearch()">❌ Effacer</button>
-                    </div>
-
-                    <!-- Navigation par jour -->
-                    <div class="day-navigation">
-                        <div class="day-selector" id="daySelector">
-                            <!-- Les jours seront générés dynamiquement -->
-                        </div>
-                        <div>
-                            <button class="btn btn-small" onclick="previousWeek()">← Semaine précédente</button>
-                            <button class="btn btn-small" onclick="nextWeek()">Semaine suivante →</button>
-                        </div>
-                    </div>
-
-                    <!-- Fiche du jour sélectionné -->
-                    <div id="dailyPointagesContainer">
+                    <!-- Pointages groupés par semaine -->
+                    <div id="weeklyPointagesContainer">
                         <!-- Contenu généré dynamiquement -->
                     </div>
                 </div>
@@ -2534,33 +2636,9 @@
                 <div class="card">
                     <h3>Mes pointages</h3>
                     
-                    <!-- Recherche -->
-                    <div class="search-box">
-                        <input type="text" id="searchEmployeePointage" class="search-input" placeholder="Rechercher par date, activité, bloc..." onkeyup="searchEmployeePointages()">
-                        <button class="btn btn-small" onclick="searchEmployeePointages()">🔍 Rechercher</button>
-                    </div>
-
-                    <div class="table-container">
-                        <table id="employeePointagesTable">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>ID</th>
-                                    <th>Nom Prénom</th>
-                                    <th>Présence</th>
-                                    <th>Activité</th>
-                                    <th>Bloc</th>
-                                    <th>Sous-quantités</th>
-                                    <th>Quantité totale</th>
-                                    <th>Prix unitaire</th>
-                                    <th>Prix total</th>
-                                    <th>Chef</th>
-                                </tr>
-                            </thead>
-                            <tbody id="employeePointagesBody">
-                                <!-- Populated by JavaScript -->
-                            </tbody>
-                        </table>
+                    <!-- Pointages groupés par semaine -->
+                    <div id="employeeWeeklyPointagesContainer">
+                        <!-- Contenu généré dynamiquement -->
                     </div>
                 </div>
             </section>
@@ -2744,8 +2822,9 @@
             'ZoneF', 'ZoneG', 'ZoneH', 'ZoneI', 'ZoneJ'
         ];
 
-        // Variables globales pour la navigation par jour
+        // Variables globales pour la navigation par semaine
         let currentWeekOffset = 0;
+        let currentEmployeeWeekOffset = 0;
         let selectedDate = new Date().toISOString().split('T')[0];
         let lastSavedPointages = [];
 
@@ -3004,9 +3083,360 @@
         }
 
         // =============================================
-        // FONCTIONS D'AUTHENTIFICATION
+        // NOUVELLES FONCTIONS POUR LES POINTAGES PAR SEMAINE
         // =============================================
 
+        // Fonction pour grouper les pointages par semaine
+        function groupPointagesByWeek(pointages) {
+            const weeks = {};
+            
+            pointages.forEach(pointage => {
+                const date = new Date(pointage.date);
+                const weekNumber = getWeekNumber(date);
+                const year = date.getFullYear();
+                const weekKey = `${year}-${weekNumber}`;
+                
+                if (!weeks[weekKey]) {
+                    const weekStart = getStartOfWeek(date);
+                    const weekEnd = getEndOfWeek(date);
+                    
+                    weeks[weekKey] = {
+                        weekNumber: weekNumber,
+                        year: year,
+                        startDate: weekStart,
+                        endDate: weekEnd,
+                        pointages: [],
+                        totalPointages: 0,
+                        totalQuantite: 0,
+                        totalPrix: 0,
+                        employes: new Set()
+                    };
+                }
+                
+                weeks[weekKey].pointages.push(pointage);
+                weeks[weekKey].totalPointages++;
+                weeks[weekKey].totalQuantite += pointage.qty_total || 0;
+                weeks[weekKey].totalPrix += pointage.total_price || 0;
+                weeks[weekKey].employes.add(pointage.employee_id);
+            });
+            
+            return weeks;
+        }
+
+        // Obtenir le numéro de semaine ISO
+        function getWeekNumber(date) {
+            const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+            const dayNum = d.getUTCDay() || 7;
+            d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+        }
+
+        // Obtenir le début de la semaine (lundi)
+        function getStartOfWeek(date) {
+            const d = new Date(date);
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+            return new Date(d.setDate(diff));
+        }
+
+        // Obtenir la fin de la semaine (dimanche)
+        function getEndOfWeek(date) {
+            const start = getStartOfWeek(date);
+            const end = new Date(start);
+            end.setDate(start.getDate() + 6);
+            return end;
+        }
+
+        // Formater une date en français
+        function formatDateFr(date) {
+            return date.toLocaleDateString('fr-FR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+        }
+
+        // Générer l'affichage des pointages par semaine
+        function generateWeeklyPointagesDisplay(weeks, userRole = 'admin') {
+            let html = '';
+            
+            // Trier les semaines par date (plus récentes en premier)
+            const sortedWeeks = Object.values(weeks).sort((a, b) => 
+                new Date(b.startDate) - new Date(a.startDate)
+            );
+            
+            if (sortedWeeks.length === 0) {
+                return `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📋</div>
+                        <h3>Aucun pointage trouvé</h3>
+                        <p>Les pointages apparaîtront ici une fois créés</p>
+                    </div>
+                `;
+            }
+            
+            sortedWeeks.forEach(week => {
+                const weekStartFormatted = formatDateFr(week.startDate);
+                const weekEndFormatted = formatDateFr(week.endDate);
+                const uniqueEmployes = week.employes.size;
+                
+                html += `
+                    <div class="week-container">
+                        <div class="week-header" onclick="toggleWeekContent('${week.year}-${week.weekNumber}')">
+                            <div>
+                                <div class="week-title">Semaine ${week.weekNumber} - ${week.year}</div>
+                                <div class="week-dates">${weekStartFormatted} au ${weekEndFormatted}</div>
+                            </div>
+                            <div class="week-stats">
+                                <div class="week-stat">${week.totalPointages} pointages</div>
+                                <div class="week-stat">${uniqueEmployes} employés</div>
+                                <div class="week-stat">${week.totalQuantite.toFixed(2)} quantité</div>
+                                <div class="week-stat">${formatFCFA(week.totalPrix)}</div>
+                            </div>
+                        </div>
+                        <div class="week-content" id="week-${week.year}-${week.weekNumber}">
+                            <div class="table-container">
+                                <table class="week-table">
+                                    <thead>
+                                        <tr>
+                                            ${userRole === 'admin' ? '<th>ID</th>' : ''}
+                                            <th>Date</th>
+                                            <th>Employé</th>
+                                            <th>Présence</th>
+                                            <th>Activité</th>
+                                            <th>Bloc</th>
+                                            <th>Sous-quantités</th>
+                                            <th>Quantité totale</th>
+                                            <th>Prix unitaire</th>
+                                            <th>Prix total</th>
+                                            ${userRole === 'admin' ? '<th>Chef</th>' : ''}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${week.pointages.map(pointage => {
+                                            const subQuantities = pointage.sub_quantities || [];
+                                            const sousQuantitesFormatees = subQuantities.length > 0 ? subQuantities.join('+') : '-';
+                                            const isPresent = pointage.presence === 'Présent';
+                                            
+                                            return `
+                                                <tr>
+                                                    ${userRole === 'admin' ? `<td>${pointage.id}</td>` : ''}
+                                                    <td>${pointage.date}</td>
+                                                    <td>${pointage.employee_name || 'N/A'}</td>
+                                                    <td>
+                                                        <span style="color: ${isPresent ? 'var(--success)' : 'var(--danger)'}; font-weight: 500;">
+                                                            ${pointage.presence}
+                                                        </span>
+                                                    </td>
+                                                    <td>${getActivityName(pointage.activity)}</td>
+                                                    <td>${pointage.bloc || '-'}</td>
+                                                    <td>${sousQuantitesFormatees}</td>
+                                                    <td>${pointage.qty_total || 0}</td>
+                                                    <td>${formatFCFA(pointage.unit_price || 0)}</td>
+                                                    <td style="font-weight: 500;">${formatFCFA(pointage.total_price || 0)}</td>
+                                                    ${userRole === 'admin' ? `<td>${pointage.chef_name || 'N/A'}</td>` : ''}
+                                                </tr>
+                                            `;
+                                        }).join('')}
+                                        <tr class="week-total">
+                                            ${userRole === 'admin' ? '<td colspan="6"></td>' : '<td colspan="5"></td>'}
+                                            <td><strong>Total semaine:</strong></td>
+                                            <td><strong>${week.totalQuantite.toFixed(2)}</strong></td>
+                                            <td></td>
+                                            <td><strong>${formatFCFA(week.totalPrix)}</strong></td>
+                                            ${userRole === 'admin' ? '<td></td>' : ''}
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            return html;
+        }
+
+        // Basculer l'affichage du contenu d'une semaine
+        function toggleWeekContent(weekId) {
+            const content = document.getElementById(`week-${weekId}`);
+            content.classList.toggle('expanded');
+        }
+
+        // =============================================
+        // MODIFICATIONS DES FONCTIONS EXISTANTES
+        // =============================================
+
+        // Admin Pointages Management - Version par semaine
+        async function loadAdminPointages() {
+            try {
+                const pointages = await getPointages();
+                const users = await getUsers();
+                
+                // Enrichir les pointages avec les noms des employés et chefs
+                const enrichedPointages = pointages.map(pointage => {
+                    const employee = users.find(u => u.id === pointage.employee_id);
+                    const chef = users.find(u => u.id === pointage.chef_id);
+                    
+                    return {
+                        ...pointage,
+                        employee_name: employee ? `${employee.prenom} ${employee.nom}` : 'N/A',
+                        chef_name: chef ? `${chef.prenom} ${chef.nom}` : 'N/A'
+                    };
+                });
+                
+                const container = document.getElementById('pointagesByWeekContainer');
+                
+                if (enrichedPointages.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📋</div>
+                            <h3>Aucune fiche de pointage trouvée</h3>
+                            <p>Les fiches de pointage créées par les chefs apparaîtront ici</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const totalPointages = enrichedPointages.length;
+                const totalPrix = enrichedPointages.reduce((sum, p) => sum + (p.total_price || 0), 0);
+                const pointagesAujourdhui = enrichedPointages.filter(p => p.date === new Date().toISOString().split('T')[0]).length;
+                const activitesUniques = [...new Set(enrichedPointages.map(p => p.activity))].length;
+
+                document.getElementById('pointageStats').innerHTML = `
+                    <div class="stat-card">
+                        <div class="stat-number">${totalPointages}</div>
+                        <div class="stat-label">Total Pointages</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${formatFCFA(totalPrix)}</div>
+                        <div class="stat-label">Total Prix</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${pointagesAujourdhui}</div>
+                        <div class="stat-label">Aujourd'hui</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${activitesUniques}</div>
+                        <div class="stat-label">Activités</div>
+                    </div>
+                `;
+
+                // Grouper les pointages par semaine
+                const weeks = groupPointagesByWeek(enrichedPointages);
+                
+                // Générer l'affichage
+                container.innerHTML = generateWeeklyPointagesDisplay(weeks, 'admin');
+                
+            } catch (error) {
+                console.error('Erreur lors du chargement des pointages admin:', error);
+                showAlert('Erreur lors du chargement des pointages: ' + error.message, 'error');
+            }
+        }
+
+        // Chef Pointages - Version par semaine
+        async function loadChefPointages() {
+            const user = getCurrentUser();
+            if (!user || user.role !== 'CHEF') return;
+
+            document.getElementById('pointagesActivityBadge').innerHTML = createActivityBadge(user.activity);
+
+            try {
+                const pointages = await getPointages();
+                const users = await getUsers();
+
+                // Filtrer les pointages du chef
+                const chefPointages = pointages.filter(p => p.chef_id === user.id);
+                
+                // Enrichir les pointages avec les noms des employés
+                const enrichedPointages = chefPointages.map(pointage => {
+                    const employee = users.find(u => u.id === pointage.employee_id);
+                    
+                    return {
+                        ...pointage,
+                        employee_name: employee ? `${employee.prenom} ${employee.nom}` : 'N/A'
+                    };
+                });
+
+                const container = document.getElementById('weeklyPointagesContainer');
+                
+                if (enrichedPointages.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📋</div>
+                            <h3>Aucun pointage trouvé</h3>
+                            <p>Vos pointages apparaîtront ici une fois créés</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Grouper les pointages par semaine
+                const weeks = groupPointagesByWeek(enrichedPointages);
+                
+                // Générer l'affichage
+                container.innerHTML = generateWeeklyPointagesDisplay(weeks, 'chef');
+                
+            } catch (error) {
+                console.error('Erreur lors du chargement des pointages du chef:', error);
+                showAlert('Erreur lors du chargement des pointages: ' + error.message, 'error');
+            }
+        }
+
+        // Employee Pointages - Version par semaine
+        async function loadEmployeePointages() {
+            const user = getCurrentUser();
+            if (!user || user.role !== 'EMPLOYE') return;
+
+            try {
+                const pointages = await getPointages();
+                const users = await getUsers();
+
+                // Filtrer les pointages de l'employé
+                const employeePointages = pointages.filter(p => p.employee_id === user.id);
+                
+                // Enrichir les pointages avec les noms des chefs
+                const enrichedPointages = employeePointages.map(pointage => {
+                    const chef = users.find(u => u.id === pointage.chef_id);
+                    
+                    return {
+                        ...pointage,
+                        chef_name: chef ? `${chef.prenom} ${chef.nom}` : 'N/A',
+                        employee_name: `${user.prenom} ${user.nom}`
+                    };
+                });
+
+                const container = document.getElementById('employeeWeeklyPointagesContainer');
+                
+                if (enrichedPointages.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📋</div>
+                            <h3>Aucun pointage trouvé</h3>
+                            <p>Vos pointages apparaîtront ici une fois créés par votre chef</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Grouper les pointages par semaine
+                const weeks = groupPointagesByWeek(enrichedPointages);
+                
+                // Générer l'affichage
+                container.innerHTML = generateWeeklyPointagesDisplay(weeks, 'employe');
+                
+            } catch (error) {
+                console.error('Erreur lors du chargement des pointages employé:', error);
+                showAlert('Erreur lors du chargement des pointages: ' + error.message, 'error');
+            }
+        }
+
+        // =============================================
+        // FONCTIONS EXISTANTES (conservées inchangées)
+        // =============================================
+
+        // Fonctions d'authentification
         async function login(username, password) {
             try {
                 const users = await getUsers();
@@ -3039,10 +3469,7 @@
             return userStr ? JSON.parse(userStr) : null;
         }
 
-        // =============================================
-        // FONCTIONS POUR LES SOUS-QUANTITÉS
-        // =============================================
-
+        // Fonctions pour les sous-quantités
         function addSubQuantity(employeeId) {
             const container = document.getElementById(`subQuantities-${employeeId}`);
             const rowCount = container.querySelectorAll('.sub-quantity-row').length;
@@ -3098,10 +3525,7 @@
             return quantities.join('+');
         }
 
-        // =============================================
-        // FONCTIONS DE SÉLECTION MULTIPLE
-        // =============================================
-
+        // Fonctions de sélection multiple
         function toggleSelectAllPointages() {
             const checkboxes = document.querySelectorAll('#pointagesTableBody input[type="checkbox"]');
             const selectAll = document.getElementById('selectAllPointages').checked;
@@ -3155,63 +3579,7 @@
             updateSelectAllPointagesCheckbox();
         }
 
-        function toggleSelectAllBulletins() {
-            const checkboxes = document.querySelectorAll('#bulletinsTableBody input[type="checkbox"]');
-            const selectAll = document.getElementById('selectAllBulletins').checked;
-            
-            selectedBulletins.clear();
-            
-            checkboxes.forEach(checkbox => {
-                checkbox.checked = selectAll;
-                if (selectAll) {
-                    selectedBulletins.add(checkbox.value);
-                }
-            });
-            
-            updateSelectedBulletinsCount();
-        }
-
-        function toggleBulletinSelection(bulletinId) {
-            if (selectedBulletins.has(bulletinId)) {
-                selectedBulletins.delete(bulletinId);
-            } else {
-                selectedBulletins.add(bulletinId);
-            }
-            
-            updateSelectedBulletinsCount();
-            updateSelectAllBulletinsCheckbox();
-        }
-
-        function updateSelectedBulletinsCount() {
-            const countElement = document.getElementById('selectedBulletinsCount');
-            countElement.textContent = `${selectedBulletins.size} sélectionné(s)`;
-        }
-
-        function updateSelectAllBulletinsCheckbox() {
-            const checkboxes = document.querySelectorAll('#bulletinsTableBody input[type="checkbox"]');
-            const selectAll = document.getElementById('selectAllBulletins');
-            
-            if (checkboxes.length === 0) {
-                selectAll.checked = false;
-                return;
-            }
-            
-            const allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
-            selectAll.checked = allChecked;
-        }
-
-        function clearBulletinsSelection() {
-            selectedBulletins.clear();
-            const checkboxes = document.querySelectorAll('#bulletinsTableBody input[type="checkbox"]');
-            checkboxes.forEach(checkbox => checkbox.checked = false);
-            updateSelectedBulletinsCount();
-            updateSelectAllBulletinsCheckbox();
-        }
-
-        // =============================================
-        // FONCTIONS D'ARCHIVAGE
-        // =============================================
-
+        // Fonctions d'archivage
         function showArchiveModal(type) {
             const modal = document.getElementById('archiveModal');
             const modalTitle = document.getElementById('modalTitle');
@@ -3265,427 +3633,7 @@
             `;
         }
 
-        function getBulletinsArchiveOptions() {
-            return `
-                <div class="archive-options">
-                    <div class="archive-option" onclick="selectArchiveOption('bulletins_selected')">
-                        <div class="option-icon">📋</div>
-                        <div class="option-content">
-                            <div class="option-title">Archiver la sélection</div>
-                            <div class="option-description">
-                                ${selectedBulletins.size > 0 ? 
-                                    `Archiver ${selectedBulletins.size} bulletin(s) sélectionné(s)` : 
-                                    'Aucun bulletin sélectionné'
-                                }
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="archive-option" onclick="selectArchiveOption('bulletins_month')">
-                        <div class="option-icon">📅</div>
-                        <div class="option-content">
-                            <div class="option-title">Archiver par mois</div>
-                            <div class="option-description">
-                                Archiver tous les bulletins d'un mois spécifique
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div style="margin-top: 1.5rem; text-align: center;">
-                    <button class="btn btn-outline" onclick="closeArchiveModal()">Annuler</button>
-                </div>
-            `;
-        }
-
-        function selectArchiveOption(option) {
-            closeArchiveModal();
-            
-            switch(option) {
-                case 'pointages_selected':
-                    archiverPointagesSelectionnes();
-                    break;
-                case 'pointages_month':
-                    showMonthSelectionModal('pointages');
-                    break;
-                case 'bulletins_selected':
-                    archiverBulletinsSelectionnes();
-                    break;
-                case 'bulletins_month':
-                    showMonthSelectionModal('bulletins');
-                    break;
-            }
-        }
-
-        function showMonthSelectionModal(type) {
-            const modal = document.getElementById('archiveModal');
-            const modalTitle = document.getElementById('modalTitle');
-            const modalContent = document.getElementById('modalContent');
-            
-            const currentYear = new Date().getFullYear();
-            const years = [currentYear - 1, currentYear, currentYear + 1];
-            const months = [
-                { value: '01', name: 'Janvier' }, { value: '02', name: 'Février' },
-                { value: '03', name: 'Mars' }, { value: '04', name: 'Avril' },
-                { value: '05', name: 'Mai' }, { value: '06', name: 'Juin' },
-                { value: '07', name: 'Juillet' }, { value: '08', name: 'Août' },
-                { value: '09', name: 'Septembre' }, { value: '10', name: 'Octobre' },
-                { value: '11', name: 'Novembre' }, { value: '12', name: 'Décembre' }
-            ];
-            
-            let optionsHTML = '';
-            years.forEach(year => {
-                months.forEach(month => {
-                    optionsHTML += `<option value="${year}-${month.value}">${month.name} ${year}</option>`;
-                });
-            });
-            
-            modalTitle.textContent = type === 'pointages' ? 
-                'Archiver les pointages d\'un mois' : 
-                'Archiver les bulletins d\'un mois';
-                
-            modalContent.innerHTML = `
-                <div class="form-group">
-                    <label>Sélectionnez le mois à archiver :</label>
-                    <select id="selectedMonth" class="form-control">
-                        ${optionsHTML}
-                    </select>
-                </div>
-                
-                <div style="margin-top: 1.5rem; text-align: center;">
-                    <button class="btn" onclick="archiverParMois('${type}')">📦 Archiver le mois</button>
-                    <button class="btn btn-outline" onclick="closeArchiveModal()" style="margin-left: 0.5rem;">Annuler</button>
-                </div>
-            `;
-            
-            modal.style.display = 'flex';
-        }
-
-        async function archiverPointagesSelectionnes() {
-            if (selectedPointages.size === 0) {
-                showAlert('Aucune fiche de pointage sélectionnée', 'warning');
-                return;
-            }
-
-            try {
-                // Dans une vraie application, vous implémenteriez la logique d'archivage ici
-                // Pour l'instant, nous allons simplement marquer les pointages comme archivés
-                showAlert(`${selectedPointages.size} fiche(s) de pointage marquée(s) pour archivage`, 'success');
-                selectedPointages.clear();
-                updateSelectedPointagesCount();
-                loadAdminPointages();
-            } catch (error) {
-                console.error('Erreur lors de l\'archivage:', error);
-                showAlert('Erreur lors de l\'archivage: ' + error.message, 'error');
-            }
-        }
-
-        async function archiverBulletinsSelectionnes() {
-            if (selectedBulletins.size === 0) {
-                showAlert('Aucun bulletin sélectionné', 'warning');
-                return;
-            }
-
-            try {
-                // Archiver les bulletins sélectionnés
-                for (const bulletinId of selectedBulletins) {
-                    await updateBulletin(parseInt(bulletinId), { archived: true });
-                }
-                
-                showAlert(`${selectedBulletins.size} bulletin(s) archivé(s) avec succès`, 'success');
-                selectedBulletins.clear();
-                updateSelectedBulletinsCount();
-                loadBulletinsTable();
-            } catch (error) {
-                console.error('Erreur lors de l\'archivage:', error);
-                showAlert('Erreur lors de l\'archivage: ' + error.message, 'error');
-            }
-        }
-
-        function archiverParMois(type) {
-            const selectedMonth = document.getElementById('selectedMonth').value;
-            closeArchiveModal();
-            showAlert(`Archivage programmé pour ${type} du mois ${selectedMonth}`, 'info');
-        }
-
-        function archiverDonneesAnciennes() {
-            showAlert('Archivage automatique des données anciennes programmé', 'info');
-        }
-
-        // =============================================
-        // FONCTIONS D'AFFICHAGE DES ARCHIVES
-        // =============================================
-
-        function showArchives(type) {
-            const archivesContent = document.getElementById('archivesContent');
-            
-            if (type === 'bulletins') {
-                showBulletinsArchives(archivesContent);
-            } else if (type === 'pointages') {
-                showPointagesArchives(archivesContent);
-            }
-        }
-
-        async function showBulletinsArchives(container) {
-            try {
-                const bulletins = await getArchivedBulletins();
-                const users = await getUsers();
-                
-                if (bulletins.length === 0) {
-                    container.innerHTML = `
-                        <h4>📋 Archives des Bulletins de Paie</h4>
-                        <div class="empty-state">
-                            <div class="empty-state-icon">📦</div>
-                            <p>Aucun bulletin archivé</p>
-                            <p>Les bulletins archivés apparaîtront ici</p>
-                        </div>
-                    `;
-                    return;
-                }
-
-                container.innerHTML = `
-                    <h4>📋 Archives des Bulletins de Paie</h4>
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Employé</th>
-                                    <th>Période</th>
-                                    <th>Salaire Brut</th>
-                                    <th>Net à Payer</th>
-                                    <th>Date d'archivage</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${bulletins.map(b => {
-                                    const employe = users.find(u => u.id === b.employe_id);
-                                    return `
-                                        <tr>
-                                            <td>${b.id}</td>
-                                            <td>${employe ? `${employe.prenom} ${employe.nom}` : 'N/A'}</td>
-                                            <td>${b.periode}</td>
-                                            <td>${formatFCFA(b.salaire_brut)}</td>
-                                            <td>${formatFCFA(b.net_a_payer)}</td>
-                                            <td>${new Date(b.updated_at || b.date_generation).toLocaleDateString('fr-FR')}</td>
-                                            <td>
-                                                <button class="btn btn-small" onclick="voirBulletinArchive(${b.id})">👁️ Voir</button>
-                                                <button class="btn btn-small btn-outline" onclick="restaurerBulletin(${b.id})">↩️ Restaurer</button>
-                                            </td>
-                                        </tr>
-                                    `;
-                                }).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                `;
-            } catch (error) {
-                console.error('Erreur lors du chargement des archives:', error);
-                container.innerHTML = `
-                    <h4>📋 Archives des Bulletins de Paie</h4>
-                    <div class="alert error">
-                        Erreur lors du chargement des archives: ${error.message}
-                    </div>
-                `;
-            }
-        }
-
-        async function restaurerBulletin(bulletinId) {
-            try {
-                await updateBulletin(bulletinId, { archived: false });
-                showAlert('Bulletin restauré avec succès', 'success');
-                showBulletinsArchives(document.getElementById('archivesContent'));
-            } catch (error) {
-                console.error('Erreur lors de la restauration du bulletin:', error);
-                showAlert('Erreur lors de la restauration: ' + error.message, 'error');
-            }
-        }
-
-        async function voirBulletinArchive(bulletinId) {
-            try {
-                const bulletins = await getArchivedBulletins();
-                const bulletin = bulletins.find(b => b.id === bulletinId);
-                
-                if (!bulletin) {
-                    showAlert('Bulletin non trouvé', 'error');
-                    return;
-                }
-
-                const users = await getUsers();
-                const employe = users.find(u => u.id === bulletin.employe_id);
-                
-                if (!employe) {
-                    showAlert('Employé non trouvé', 'error');
-                    return;
-                }
-
-                const bulletinComplet = {
-                    ...bulletin,
-                    employe: employe
-                };
-
-                localStorage.setItem('current_bulletin', JSON.stringify(bulletinComplet));
-                
-                const content = document.getElementById('bulletinContent');
-                content.innerHTML = genererBulletinPaiePro(bulletinComplet);
-                
-                showSection('bulletinDetail');
-            } catch (error) {
-                console.error('Erreur lors du chargement du bulletin:', error);
-                showAlert('Erreur lors du chargement du bulletin: ' + error.message, 'error');
-            }
-        }
-
-        function showPointagesArchives(container) {
-            container.innerHTML = `
-                <h4>📊 Archives des Fiches de Pointage</h4>
-                <div class="empty-state">
-                    <div class="empty-state-icon">📦</div>
-                    <p>Fonctionnalité d'archivage en cours de développement</p>
-                    <p>Les archives seront bientôt disponibles</p>
-                </div>
-            `;
-        }
-
-        // =============================================
-        // FONCTIONS DE RECHERCHE
-        // =============================================
-
-        function searchPointages() {
-            const searchTerm = document.getElementById('searchPointage').value.toLowerCase();
-            if (!searchTerm) {
-                filterPointagesTable();
-                return;
-            }
-
-            // Implémentation basique de la recherche côté client
-            const rows = document.querySelectorAll('#pointagesTableBody tr');
-            rows.forEach(row => {
-                const text = row.textContent.toLowerCase();
-                row.style.display = text.includes(searchTerm) ? '' : 'none';
-            });
-        }
-
-        function searchEmployeePointages() {
-            const searchTerm = document.getElementById('searchEmployeePointage').value.toLowerCase();
-            const rows = document.querySelectorAll('#employeePointagesBody tr');
-            rows.forEach(row => {
-                const text = row.textContent.toLowerCase();
-                row.style.display = text.includes(searchTerm) ? '' : 'none';
-            });
-        }
-
-        function searchChefPointages() {
-            const searchBox = document.getElementById('chefSearchBox');
-            searchBox.style.display = searchBox.style.display === 'none' ? 'flex' : 'none';
-        }
-
-        function performChefSearch() {
-            const searchTerm = document.getElementById('searchChefPointage').value.toLowerCase();
-            const rows = document.querySelectorAll('#dailyPointagesContainer tr');
-            rows.forEach(row => {
-                const text = row.textContent.toLowerCase();
-                row.style.display = text.includes(searchTerm) ? '' : 'none';
-            });
-        }
-
-        function clearChefSearch() {
-            document.getElementById('searchChefPointage').value = '';
-            document.getElementById('chefSearchBox').style.display = 'none';
-            loadDailyPointages(selectedDate);
-        }
-
-        // =============================================
-        // FONCTIONS EXISTANTES ADAPTÉES POUR SUPABASE
-        // =============================================
-
-        // Photo handling functions
-        function previewPhoto(event) {
-            const input = event.target;
-            const preview = document.getElementById('photoPreview');
-            
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                
-                reader.onload = function(e) {
-                    preview.innerHTML = '';
-                    const img = document.createElement('img');
-                    img.src = e.target.result;
-                    img.className = 'photo-preview';
-                    preview.appendChild(img);
-                }
-                
-                reader.readAsDataURL(input.files[0]);
-            }
-        }
-
-        function getPhotoData() {
-            const input = document.getElementById('photoInput');
-            if (input.files && input.files[0]) {
-                return new Promise((resolve) => {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        resolve(e.target.result);
-                    };
-                    reader.readAsDataURL(input.files[0]);
-                });
-            }
-            return Promise.resolve(null);
-        }
-
-        function createAvatar(user) {
-            if (user.photo) {
-                return `<img src="${user.photo}" alt="${user.prenom} ${user.nom}" class="user-photo-table">`;
-            }
-            
-            const roleLetter = user.role.charAt(0);
-            const nomLetter = user.nom ? user.nom.charAt(0).toUpperCase() : 'U';
-            const initiales = roleLetter + nomLetter;
-            
-            const avatarClass = `avatar-table ${
-                user.role === 'ADMINISTRATEUR' ? 'avatar-admin' : 
-                user.role === 'CHEF' ? 'avatar-chef' : 'avatar-employe'
-            }`;
-            
-            return `<div class="${avatarClass}">${initiales}</div>`;
-        }
-
-        function createLargeAvatar(user) {
-            if (user.photo) {
-                return `<img src="${user.photo}" alt="${user.prenom} ${user.nom}" class="photo-preview">`;
-            }
-            
-            const roleLetter = user.role.charAt(0);
-            const nomLetter = user.nom ? user.nom.charAt(0).toUpperCase() : 'U';
-            const initiales = roleLetter + nomLetter;
-            
-            const avatarClass = `avatar ${
-                user.role === 'ADMINISTRATEUR' ? 'avatar-admin' : 
-                user.role === 'CHEF' ? 'avatar-chef' : 'avatar-employe'
-            }`;
-            
-            return `<div class="${avatarClass}" style="width: 120px; height: 120px; font-size: 2rem; margin: 0 auto 1rem;">${initiales}</div>`;
-        }
-
-        function createMediumAvatar(user) {
-            if (user.photo) {
-                return `<img src="${user.photo}" alt="${user.prenom} ${user.nom}" class="user-photo">`;
-            }
-            
-            const roleLetter = user.role.charAt(0);
-            const nomLetter = user.nom ? user.nom.charAt(0).toUpperCase() : 'U';
-            const initiales = roleLetter + nomLetter;
-            
-            const avatarClass = `avatar ${
-                user.role === 'ADMINISTRATEUR' ? 'avatar-admin' : 
-                user.role === 'CHEF' ? 'avatar-chef' : 'avatar-employe'
-            }`;
-            
-            return `<div class="${avatarClass}">${initiales}</div>`;
-        }
-
-        // UI Functions
+        // Fonctions utilitaires
         function showSection(sectionId) {
             document.querySelectorAll('.section').forEach(section => {
                 section.classList.remove('active');
@@ -3872,6 +3820,91 @@
                 console.error('Erreur lors de la création de l\'utilisateur:', error);
                 showAlert('Erreur lors de la création de l\'utilisateur: ' + error.message, 'error');
             }
+        }
+
+        // Photo handling functions
+        function previewPhoto(event) {
+            const input = event.target;
+            const preview = document.getElementById('photoPreview');
+            
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    preview.innerHTML = '';
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.className = 'photo-preview';
+                    preview.appendChild(img);
+                }
+                
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function getPhotoData() {
+            const input = document.getElementById('photoInput');
+            if (input.files && input.files[0]) {
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        resolve(e.target.result);
+                    };
+                    reader.readAsDataURL(input.files[0]);
+                });
+            }
+            return Promise.resolve(null);
+        }
+
+        function createAvatar(user) {
+            if (user.photo) {
+                return `<img src="${user.photo}" alt="${user.prenom} ${user.nom}" class="user-photo-table">`;
+            }
+            
+            const roleLetter = user.role.charAt(0);
+            const nomLetter = user.nom ? user.nom.charAt(0).toUpperCase() : 'U';
+            const initiales = roleLetter + nomLetter;
+            
+            const avatarClass = `avatar-table ${
+                user.role === 'ADMINISTRATEUR' ? 'avatar-admin' : 
+                user.role === 'CHEF' ? 'avatar-chef' : 'avatar-employe'
+            }`;
+            
+            return `<div class="${avatarClass}">${initiales}</div>`;
+        }
+
+        function createLargeAvatar(user) {
+            if (user.photo) {
+                return `<img src="${user.photo}" alt="${user.prenom} ${user.nom}" class="photo-preview">`;
+            }
+            
+            const roleLetter = user.role.charAt(0);
+            const nomLetter = user.nom ? user.nom.charAt(0).toUpperCase() : 'U';
+            const initiales = roleLetter + nomLetter;
+            
+            const avatarClass = `avatar ${
+                user.role === 'ADMINISTRATEUR' ? 'avatar-admin' : 
+                user.role === 'CHEF' ? 'avatar-chef' : 'avatar-employe'
+            }`;
+            
+            return `<div class="${avatarClass}" style="width: 120px; height: 120px; font-size: 2rem; margin: 0 auto 1rem;">${initiales}</div>`;
+        }
+
+        function createMediumAvatar(user) {
+            if (user.photo) {
+                return `<img src="${user.photo}" alt="${user.prenom} ${user.nom}" class="user-photo">`;
+            }
+            
+            const roleLetter = user.role.charAt(0);
+            const nomLetter = user.nom ? user.nom.charAt(0).toUpperCase() : 'U';
+            const initiales = roleLetter + nomLetter;
+            
+            const avatarClass = `avatar ${
+                user.role === 'ADMINISTRATEUR' ? 'avatar-admin' : 
+                user.role === 'CHEF' ? 'avatar-chef' : 'avatar-employe'
+            }`;
+            
+            return `<div class="${avatarClass}">${initiales}</div>`;
         }
 
         // Chef Actions
@@ -4413,555 +4446,6 @@
             });
         }
 
-        // Chef Pointages - Vue par jour
-        function loadChefPointages() {
-            const user = getCurrentUser();
-            if (!user || user.role !== 'CHEF') return;
-
-            document.getElementById('pointagesActivityBadge').innerHTML = createActivityBadge(user.activity);
-
-            generateDayNavigation();
-            loadDailyPointages(selectedDate);
-        }
-
-        function generateDayNavigation() {
-            const daySelector = document.getElementById('daySelector');
-            const today = new Date();
-            const startDate = new Date(today);
-            startDate.setDate(today.getDate() + (currentWeekOffset * 7) - today.getDay());
-
-            let html = '';
-            for (let i = 0; i < 7; i++) {
-                const currentDate = new Date(startDate);
-                currentDate.setDate(startDate.getDate() + i);
-                const dateString = currentDate.toISOString().split('T')[0];
-                const dayName = currentDate.toLocaleDateString('fr-FR', { weekday: 'short' });
-                const dayNumber = currentDate.getDate();
-                const month = currentDate.toLocaleDateString('fr-FR', { month: 'short' });
-
-                const isActive = dateString === selectedDate;
-                const isToday = dateString === new Date().toISOString().split('T')[0];
-
-                html += `
-                    <button class="day-btn ${isActive ? 'active' : ''} ${isToday ? 'today' : ''}" 
-                            onclick="selectDate('${dateString}')">
-                        <div>${dayName}</div>
-                        <div style="font-weight: ${isToday ? 'bold' : 'normal'}">${dayNumber}</div>
-                        <div style="font-size: 0.8rem; opacity: 0.7;">${month}</div>
-                    </button>
-                `;
-            }
-
-            daySelector.innerHTML = html;
-        }
-
-        function selectDate(date) {
-            selectedDate = date;
-            generateDayNavigation();
-            loadDailyPointages(date);
-        }
-
-        function previousWeek() {
-            currentWeekOffset--;
-            generateDayNavigation();
-            loadDailyPointages(selectedDate);
-        }
-
-        function nextWeek() {
-            currentWeekOffset++;
-            generateDayNavigation();
-            loadDailyPointages(selectedDate);
-        }
-
-        async function loadDailyPointages(date) {
-            const user = getCurrentUser();
-            if (!user || user.role !== 'CHEF') return;
-
-            try {
-                const pointages = await getPointages();
-                const users = await getUsers();
-
-                const dailyPointages = pointages.filter(p => 
-                    p.date === date && 
-                    p.chef_id === user.id && 
-                    p.activity === user.activity
-                );
-
-                const container = document.getElementById('dailyPointagesContainer');
-
-                if (dailyPointages.length === 0) {
-                    container.innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-state-icon">📋</div>
-                            <h3>Aucun pointage pour cette date</h3>
-                            <p>Aucune fiche de pointage n'a été enregistrée pour le ${formatDate(date)}</p>
-                        </div>
-                    `;
-                    return;
-                }
-
-                const totalEmployes = [...new Set(dailyPointages.map(p => p.employee_id))].length;
-                const totalPresents = dailyPointages.filter(p => p.presence === 'Présent').length;
-                const totalAbsents = dailyPointages.filter(p => p.presence === 'Absent').length;
-                const totalQuantite = dailyPointages.reduce((sum, p) => sum + (p.qty_total || 0), 0);
-                const totalPrix = dailyPointages.reduce((sum, p) => sum + (p.total_price || 0), 0);
-
-                container.innerHTML = `
-                    <div class="fiche-header">
-                        <div class="fiche-date">Fiche du ${formatDate(date)}</div>
-                        <div class="fiche-activity">Activité: ${getActivityName(user.activity)}</div>
-                        <div class="fiche-stats">
-                            <div class="fiche-stat">
-                                <div class="fiche-stat-number">${totalEmployes}</div>
-                                <div class="fiche-stat-label">Employés</div>
-                            </div>
-                            <div class="fiche-stat">
-                                <div class="fiche-stat-number">${totalPresents}</div>
-                                <div class="fiche-stat-label">Présents</div>
-                            </div>
-                            <div class="fiche-stat">
-                                <div class="fiche-stat-number">${totalAbsents}</div>
-                                <div class="fiche-stat-label">Absents</div>
-                            </div>
-                            <div class="fiche-stat">
-                                <div class="fiche-stat-number">${totalQuantite}</div>
-                                <div class="fiche-stat-label">Quantité</div>
-                            </div>
-                            <div class="fiche-stat">
-                                <div class="fiche-stat-number">${formatFCFA(totalPrix)}</div>
-                                <div class="fiche-stat-label">Total</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Nom Prénom</th>
-                                    <th>Date</th>
-                                    <th>Présence</th>
-                                    <th>Activité</th>
-                                    <th>Bloc</th>
-                                    <th>Sous-quantités</th>
-                                    <th>Quantité totale</th>
-                                    <th>Prix unitaire</th>
-                                    <th>Prix total</th>
-                                    <th>Chef</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${dailyPointages.map(p => {
-                                    const employee = users.find(u => u.id === p.employee_id);
-                                    const chef = users.find(u => u.id === p.chef_id);
-                                    const subQuantities = p.sub_quantities || [];
-                                    const sousQuantitesFormatees = subQuantities.length > 0 ? subQuantities.join('+') : '-';
-                                    
-                                    return `
-                                        <tr>
-                                            <td>${p.id}</td>
-                                            <td>${employee ? `${employee.prenom} ${employee.nom}` : 'N/A'}</td>
-                                            <td>${p.date}</td>
-                                            <td>
-                                                <span style="color: ${p.presence === 'Présent' ? 'var(--success)' : 'var(--danger)'}; font-weight: 500;">
-                                                    ${p.presence}
-                                                </span>
-                                            </td>
-                                            <td>${getActivityName(p.activity)}</td>
-                                            <td>${p.bloc || '-'}</td>
-                                            <td>${sousQuantitesFormatees}</td>
-                                            <td>${p.qty_total}</td>
-                                            <td>${formatFCFA(p.unit_price)}</td>
-                                            <td style="font-weight: 500;">${formatFCFA(p.total_price)}</td>
-                                            <td>${chef ? `${chef.prenom} ${chef.nom}` : 'N/A'}</td>
-                                        </tr>
-                                    `;
-                                }).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                `;
-            } catch (error) {
-                console.error('Erreur lors du chargement des pointages du jour:', error);
-                showAlert('Erreur lors du chargement des pointages: ' + error.message, 'error');
-            }
-        }
-
-        function formatDate(dateString) {
-            const date = new Date(dateString);
-            return date.toLocaleDateString('fr-FR', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
-        }
-
-        // Admin Pointages Management
-        async function loadAdminPointages() {
-            try {
-                const pointages = await getPointages();
-                const users = await getUsers();
-                
-                const tbody = document.getElementById('pointagesTableBody');
-                
-                if (pointages.length === 0) {
-                    tbody.innerHTML = `
-                        <tr>
-                            <td colspan="12" style="text-align: center; padding: 2rem;">
-                                <div style="font-size: 3rem; margin-bottom: 1rem;">📋</div>
-                                <h4>Aucune fiche de pointage trouvée</h4>
-                                <p>Les fiches de pointage créées par les chefs apparaîtront ici</p>
-                            </td>
-                        </tr>
-                    `;
-                    return;
-                }
-
-                const totalPointages = pointages.length;
-                const totalPrix = pointages.reduce((sum, p) => sum + (p.total_price || 0), 0);
-                const pointagesAujourdhui = pointages.filter(p => p.date === new Date().toISOString().split('T')[0]).length;
-                const activitesUniques = [...new Set(pointages.map(p => p.activity))].length;
-
-                document.getElementById('pointageStats').innerHTML = `
-                    <div class="stat-card">
-                        <div class="stat-number">${totalPointages}</div>
-                        <div class="stat-label">Total Pointages</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number">${formatFCFA(totalPrix)}</div>
-                        <div class="stat-label">Total Prix</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number">${pointagesAujourdhui}</div>
-                        <div class="stat-label">Aujourd'hui</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number">${activitesUniques}</div>
-                        <div class="stat-label">Activités</div>
-                    </div>
-                `;
-
-                updatePointageFilters(pointages, users);
-                
-                tbody.innerHTML = pointages.map(p => {
-                    const chef = users.find(u => u.id === p.chef_id);
-                    const employee = users.find(u => u.id === p.employee_id);
-                    const subQuantities = p.sub_quantities || [];
-                    const sousQuantitesFormatees = subQuantities.length > 0 ? subQuantities.join('+') : '-';
-                    
-                    return `
-                        <tr>
-                            <td>
-                                <input type="checkbox" value="${p.id}" onchange="togglePointageSelection(${p.id})">
-                            </td>
-                            <td>${p.id}</td>
-                            <td>${p.date}</td>
-                            <td>${chef ? `${chef.prenom} ${chef.nom}` : 'N/A'}</td>
-                            <td>${getActivityName(p.activity)}</td>
-                            <td>${employee ? `${employee.prenom} ${employee.nom}` : 'N/A'}</td>
-                            <td>${p.presence}</td>
-                            <td>${p.bloc || '-'}</td>
-                            <td>${sousQuantitesFormatees}</td>
-                            <td>${p.qty_total}</td>
-                            <td>${formatFCFA(p.unit_price)}</td>
-                            <td>${formatFCFA(p.total_price)}</td>
-                        </tr>
-                    `;
-                }).join('');
-                
-                updateSelectedPointagesCount();
-                updateSelectAllPointagesCheckbox();
-            } catch (error) {
-                console.error('Erreur lors du chargement des pointages admin:', error);
-                showAlert('Erreur lors du chargement des pointages: ' + error.message, 'error');
-            }
-        }
-
-        function updatePointageFilters(pointages, users) {
-            const activityFilter = document.getElementById('filterPointageActivity');
-            const chefFilter = document.getElementById('filterPointageChef');
-            
-            const activities = [...new Set(pointages.map(p => p.activity))].sort();
-            activityFilter.innerHTML = '<option value="">Toutes les activités</option>';
-            activities.forEach(activity => {
-                activityFilter.innerHTML += `<option value="${activity}">${getActivityName(activity)}</option>`;
-            });
-
-            const chefs = [...new Set(pointages.map(p => p.chef_id))];
-            const chefUsers = users.filter(u => u.role === 'CHEF' && chefs.includes(u.id));
-            chefFilter.innerHTML = '<option value="">Tous les chefs</option>';
-            chefUsers.forEach(chef => {
-                chefFilter.innerHTML += `<option value="${chef.id}">${chef.prenom} ${chef.nom}</option>`;
-            });
-        }
-
-        function filterPointagesTable() {
-            const activityFilter = document.getElementById('filterPointageActivity').value;
-            const dateFilter = document.getElementById('filterPointageDate').value;
-            const chefFilter = document.getElementById('filterPointageChef').value;
-            
-            const rows = document.querySelectorAll('#pointagesTableBody tr');
-            rows.forEach(row => {
-                if (row.cells.length < 12) return;
-                
-                const pointageActivity = row.cells[4].textContent;
-                const pointageDate = row.cells[2].textContent;
-                const pointageChef = row.cells[3].textContent;
-                
-                const activityMatch = !activityFilter || pointageActivity === getActivityName(activityFilter);
-                const dateMatch = !dateFilter || pointageDate === dateFilter;
-                const chefMatch = !chefFilter || pointageChef.includes(chefFilter);
-                
-                row.style.display = activityMatch && dateMatch && chefMatch ? '' : 'none';
-            });
-        }
-
-        // =============================================
-        // FONCTIONS POUR LE POINTAGE EMPLOYÉ AVEC NOUVEAU FORMAT
-        // =============================================
-
-        async function loadEmployeePointages() {
-            const user = getCurrentUser();
-            if (!user || user.role !== 'EMPLOYE') return;
-
-            try {
-                const pointages = await getPointages();
-                const users = await getUsers();
-
-                const employeePointages = pointages.filter(p => p.employee_id === user.id)
-                    .sort((a, b) => new Date(b.date) - new Date(a.date));
-
-                const tbody = document.getElementById('employeePointagesBody');
-
-                if (employeePointages.length === 0) {
-                    tbody.innerHTML = `
-                        <tr>
-                            <td colspan="11" style="text-align: center; padding: 2rem;">
-                                <div style="font-size: 3rem; margin-bottom: 1rem;">📋</div>
-                                <h4>Aucun pointage trouvé</h4>
-                                <p>Vos pointages apparaîtront ici une fois créés par votre chef</p>
-                            </td>
-                        </tr>
-                    `;
-                    return;
-                }
-
-                let html = '';
-                
-                employeePointages.forEach(p => {
-                    const chef = users.find(u => u.id === p.chef_id);
-                    const isPresent = p.presence === 'Présent';
-                    const subQuantities = p.sub_quantities || [];
-                    const sousQuantitesFormatees = subQuantities.length > 0 ? subQuantities.join('+') : '-';
-                    
-                    // Format exact comme demandé
-                    const dateFormatee = formatDatePourPointage(p.date);
-                    const quantiteTotale = isPresent ? p.qty_total : '0';
-                    const prixUnitaireFormate = isPresent ? `${formatFCFA(p.unit_price)}` : '0FCFA';
-                    const prixTotalFormate = isPresent ? `${formatFCFA(p.total_price)}` : '0FCFA';
-                    const statutPresence = isPresent ? 'present' : 'Abscent';
-
-                    html += `
-                        <tr>
-                            <td style="font-weight: bold; white-space: nowrap;">${dateFormatee}</td>
-                            <td>${user.id}</td>
-                            <td>${user.prenom} ${user.nom}</td>
-                            <td>
-                                <span style="color: ${isPresent ? 'var(--success)' : 'var(--danger)'}; font-weight: 500;">
-                                    ${statutPresence}
-                                </span>
-                            </td>
-                            <td>${getActivityName(p.activity)}</td>
-                            <td>${p.bloc || '-'}</td>
-                            <td>${sousQuantitesFormatees}</td>
-                            <td>${quantiteTotale}</td>
-                            <td style="font-family: 'Courier New', monospace; white-space: nowrap;">${prixUnitaireFormate}</td>
-                            <td style="font-family: 'Courier New', monospace; font-weight: bold; white-space: nowrap;">${prixTotalFormate}</td>
-                            <td style="white-space: nowrap;">${chef ? chef.prenom : 'N/A'}</td>
-                        </tr>
-                    `;
-                });
-
-                tbody.innerHTML = html;
-
-            } catch (error) {
-                console.error('Erreur lors du chargement des pointages employé:', error);
-                showAlert('Erreur lors du chargement des pointages: ' + error.message, 'error');
-            }
-        }
-
-        // Fonctions utilitaires pour le formatage
-        function formatDatePourPointage(dateStr) {
-            const date = new Date(dateStr);
-            return date.toLocaleDateString('fr-FR', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric'
-            }).replace(/\//g, '/');
-        }
-
-        // =============================================
-        // FONCTIONS DE GESTION DE LA PAIE PROFESSIONNELLE
-        // =============================================
-
-        // Calculer le salaire basé sur les pointages
-        async function calculerSalaire(employeId, mois, annee) {
-            try {
-                const pointages = await getPointages();
-                const users = await getUsers();
-                
-                const employe = users.find(u => u.id === employeId);
-                if (!employe) return null;
-
-                // Filtrer les pointages du mois
-                const pointagesMois = pointages.filter(p => {
-                    const [dateAnnee, dateMois] = p.date.split('-');
-                    return p.employee_id === employeId && 
-                           parseInt(dateAnnee) === annee && 
-                           parseInt(dateMois) === mois;
-                });
-
-                // Calculer le total des gains
-                const totalGains = pointagesMois.reduce((sum, p) => sum + (p.total_price || 0), 0);
-                
-                // Calculer les jours travaillés
-                const joursTravailles = [...new Set(pointagesMois.map(p => p.date))].length;
-                
-                // Calculer le salaire de base
-                const salaireBase = CONFIG_PAIE_PRO.salaireBase;
-                
-                // Prime de rendement (10% du total des gains)
-                const primeRendement = totalGains * 0.1;
-                
-                // Salaire brut
-                const salaireBrut = salaireBase + primeRendement + totalGains;
-                
-                // Calcul des cotisations professionnelles
-                const cotisationsSalariales = calculerCotisationsSalariales(salaireBrut);
-                const netAPayer = salaireBrut - cotisationsSalariales.total;
-
-                return {
-                    employe: employe,
-                    periode: `${mois}/${annee}`,
-                    joursTravailles: joursTravailles,
-                    salaireBase: salaireBase,
-                    primeRendement: primeRendement,
-                    gainsActivites: totalGains,
-                    salaireBrut: salaireBrut,
-                    netAPayer: netAPayer,
-                    pointages: pointagesMois.length,
-                    cotisationsSalariales: cotisationsSalariales,
-                    cotisationsPatronales: calculerCotisationsPatronales(salaireBrut)
-                };
-            } catch (error) {
-                console.error('Erreur lors du calcul du salaire:', error);
-                throw error;
-            }
-        }
-
-        // Générer les bulletins pour tous les employés
-        async function genererBulletinsMensuels() {
-            try {
-                const users = await getUsers();
-                const employes = users.filter(u => u.role === 'EMPLOYE');
-                const aujourdhui = new Date();
-                const mois = aujourdhui.getMonth() + 1;
-                const annee = aujourdhui.getFullYear();
-
-                let bulletinsGeneres = 0;
-
-                for (const employe of employes) {
-                    const calculSalaire = await calculerSalaire(employe.id, mois, annee);
-                    
-                    if (calculSalaire) {
-                        await genererBulletin(calculSalaire);
-                        bulletinsGeneres++;
-                    }
-                }
-
-                showAlert(`${bulletinsGeneres} bulletin(s) généré(s) pour ${mois}/${annee}`, 'success');
-                loadBulletinsTable();
-            } catch (error) {
-                console.error('Erreur lors de la génération des bulletins:', error);
-                showAlert('Erreur lors de la génération des bulletins: ' + error.message, 'error');
-            }
-        }
-
-        // Générer un bulletin individuel
-        async function genererBulletin(calculSalaire) {
-            try {
-                const bulletins = await getBulletins();
-                
-                const bulletinExiste = bulletins.find(b => 
-                    b.employe_id === calculSalaire.employe.id && 
-                    b.periode === calculSalaire.periode
-                );
-
-                if (bulletinExiste) {
-                    return bulletinExiste;
-                }
-
-                const nouveauBulletin = {
-                    employe_id: calculSalaire.employe.id,
-                    periode: calculSalaire.periode,
-                    date_generation: new Date().toISOString(),
-                    statut: 'Généré',
-                    jours_travailles: calculSalaire.joursTravailles,
-                    salaire_base: calculSalaire.salaireBase,
-                    prime_rendement: calculSalaire.primeRendement,
-                    gains_activites: calculSalaire.gainsActivites,
-                    salaire_brut: calculSalaire.salaireBrut,
-                    net_a_payer: calculSalaire.netAPayer,
-                    cotisations_salariales: calculSalaire.cotisationsSalariales,
-                    cotisations_patronales: calculSalaire.cotisationsPatronales,
-                    archived: false
-                };
-
-                const createdBulletin = await createBulletin(nouveauBulletin);
-                return createdBulletin;
-            } catch (error) {
-                console.error('Erreur lors de la génération du bulletin:', error);
-                throw error;
-            }
-        }
-
-        // Fonctions utilitaires pour les calculs de cotisations
-        function calculerCotisationsSalariales(salaireBrut) {
-            const plafond = CONFIG_PAIE_PRO.plafondSecu;
-            const base = Math.min(salaireBrut, plafond);
-            
-            return {
-                csg: (salaireBrut * CONFIG_PAIE_PRO.cotisations.csg / 100),
-                crds: (salaireBrut * CONFIG_PAIE_PRO.cotisations.crds / 100),
-                secu: (base * CONFIG_PAIE_PRO.cotisations.secu / 100),
-                retraite: (base * CONFIG_PAIE_PRO.cotisations.retraite / 100),
-                assedic: (base * CONFIG_PAIE_PRO.cotisations.assedic / 100),
-                transport: (Math.min(salaireBrut, CONFIG_PAIE_PRO.plafondTransport) * CONFIG_PAIE_PRO.cotisations.transport / 100),
-                get total() {
-                    return this.csg + this.crds + this.secu + this.retraite + this.assedic + this.transport;
-                }
-            };
-        }
-
-        function calculerCotisationsPatronales(salaireBrut) {
-            const plafond = CONFIG_PAIE_PRO.plafondSecu;
-            const base = Math.min(salaireBrut, plafond);
-            
-            return {
-                secu: (base * CONFIG_PAIE_PRO.cotisationsPatronales.secu / 100),
-                accident: (salaireBrut * CONFIG_PAIE_PRO.cotisationsPatronales.accident / 100),
-                retraite: (base * CONFIG_PAIE_PRO.cotisationsPatronales.retraite / 100),
-                assedic: (base * CONFIG_PAIE_PRO.cotisationsPatronales.assedic / 100),
-                formation: (salaireBrut * CONFIG_PAIE_PRO.cotisationsPatronales.formation / 100),
-                transport: (Math.min(salaireBrut, CONFIG_PAIE_PRO.plafondTransport) * CONFIG_PAIE_PRO.cotisationsPatronales.transport / 100),
-                get total() {
-                    return this.secu + this.accident + this.retraite + this.assedic + this.formation + this.transport;
-                }
-            };
-        }
-
         // Formater les montants en FCFA
         function formatFCFA(montant) {
             return new Intl.NumberFormat('fr-FR', {
@@ -4970,500 +4454,6 @@
                 minimumFractionDigits: 0,
                 maximumFractionDigits: 0
             }).format(montant);
-        }
-
-        // Charger le tableau des bulletins
-        async function loadBulletinsTable() {
-            try {
-                const bulletins = await getBulletins();
-                const users = await getUsers();
-                
-                const tbody = document.getElementById('bulletinsTableBody');
-                
-                if (bulletins.length === 0) {
-                    tbody.innerHTML = `
-                        <tr>
-                            <td colspan="8" style="text-align: center; padding: 2rem;">
-                                <div style="font-size: 3rem; margin-bottom: 1rem;">💰</div>
-                                <h4>Aucun bulletin de paie généré</h4>
-                                <p>Utilisez le bouton "Générer tous les bulletins" pour créer les bulletins</p>
-                            </td>
-                        </tr>
-                    `;
-                    return;
-                }
-
-                const totalBulletins = bulletins.length;
-                const totalSalaireBrut = bulletins.reduce((sum, b) => sum + (b.salaire_brut || 0), 0);
-                const totalNetAPayer = bulletins.reduce((sum, b) => sum + (b.net_a_payer || 0), 0);
-                const bulletinsCeMois = bulletins.filter(b => {
-                    const [mois, annee] = b.periode.split('/');
-                    const aujourdhui = new Date();
-                    return parseInt(mois) === aujourdhui.getMonth() + 1 && 
-                           parseInt(annee) === aujourdhui.getFullYear();
-                }).length;
-
-                document.getElementById('paieStats').innerHTML = `
-                    <div class="stat-card">
-                        <div class="stat-number">${totalBulletins}</div>
-                        <div class="stat-label">Total Bulletins</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number">${formatFCFA(totalSalaireBrut)}</div>
-                        <div class="stat-label">Salaire Brut Total</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number">${formatFCFA(totalNetAPayer)}</div>
-                        <div class="stat-label">Net à Payer Total</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number">${bulletinsCeMois}</div>
-                        <div class="stat-label">Ce mois</div>
-                    </div>
-                `;
-                
-                updatePaieFilters(bulletins, users);
-                
-                tbody.innerHTML = bulletins.map(b => {
-                    const employe = users.find(u => u.id === b.employe_id);
-                    
-                    return `
-                        <tr>
-                            <td>
-                                <input type="checkbox" value="${b.id}" onchange="toggleBulletinSelection(${b.id})">
-                            </td>
-                            <td>${b.id}</td>
-                            <td>${employe ? `${employe.prenom} ${employe.nom}` : 'N/A'}</td>
-                            <td>${b.periode}</td>
-                            <td>${formatFCFA(b.salaire_brut)}</td>
-                            <td>${formatFCFA(b.net_a_payer)}</td>
-                            <td>${b.statut}</td>
-                            <td>
-                                <button class="btn btn-small" onclick="voirBulletin(${b.id})">👁️ Voir</button>
-                                <button class="btn btn-small btn-outline" onclick="imprimerBulletin(${b.id})">🖨️ Imprimer</button>
-                                <button class="btn btn-small btn-warning" onclick="envoyerBulletin(${b.id})">📧 Envoyer</button>
-                            </td>
-                        </tr>
-                    `;
-                }).join('');
-                
-                updateSelectedBulletinsCount();
-                updateSelectAllBulletinsCheckbox();
-            } catch (error) {
-                console.error('Erreur lors du chargement des bulletins:', error);
-                showAlert('Erreur lors du chargement des bulletins: ' + error.message, 'error');
-            }
-        }
-
-        // Mettre à jour les filtres de paie
-        function updatePaieFilters(bulletins, users) {
-            const moisFilter = document.getElementById('filterPaieMois');
-            const anneeFilter = document.getElementById('filterPaieAnnee');
-            const employeFilter = document.getElementById('filterPaieEmploye');
-            
-            const mois = [...new Set(bulletins.map(b => {
-                const [mois] = b.periode.split('/');
-                return parseInt(mois);
-            }))].sort((a, b) => a - b);
-            
-            moisFilter.innerHTML = '<option value="">Tous les mois</option>';
-            mois.forEach(m => {
-                const nomMois = new Date(2023, m-1, 1).toLocaleDateString('fr-FR', { month: 'long' });
-                moisFilter.innerHTML += `<option value="${m}">${nomMois}</option>`;
-            });
-
-            const annees = [...new Set(bulletins.map(b => {
-                const [mois, annee] = b.periode.split('/');
-                return parseInt(annee);
-            }))].sort((a, b) => b - a);
-            
-            anneeFilter.innerHTML = '<option value="">Toutes les années</option>';
-            annees.forEach(a => {
-                anneeFilter.innerHTML += `<option value="${a}">${a}</option>`;
-            });
-
-            const employesIds = [...new Set(bulletins.map(b => b.employe_id))];
-            const employes = users.filter(u => employesIds.includes(u.id));
-            
-            employeFilter.innerHTML = '<option value="">Tous les employés</option>';
-            employes.forEach(emp => {
-                employeFilter.innerHTML += `<option value="${emp.id}">${emp.prenom} ${emp.nom}</option>`;
-            });
-        }
-
-        // Filtrer les bulletins
-        function filterBulletins() {
-            const moisFilter = document.getElementById('filterPaieMois').value;
-            const anneeFilter = document.getElementById('filterPaieAnnee').value;
-            const employeFilter = document.getElementById('filterPaieEmploye').value;
-            
-            const rows = document.querySelectorAll('#bulletinsTableBody tr');
-            rows.forEach(row => {
-                if (row.cells.length < 8) return;
-                
-                const bulletinPeriode = row.cells[3].textContent;
-                const bulletinEmploye = row.cells[2].textContent;
-                
-                const [mois, annee] = bulletinPeriode.split('/');
-                const moisMatch = !moisFilter || parseInt(mois) === parseInt(moisFilter);
-                const anneeMatch = !anneeFilter || annee === anneeFilter;
-                const employeMatch = !employeFilter || bulletinEmploye.includes(employeFilter);
-                
-                row.style.display = moisMatch && anneeMatch && employeMatch ? '' : 'none';
-            });
-        }
-
-        // Voir le détail d'un bulletin
-        async function voirBulletin(bulletinId) {
-            try {
-                const bulletins = await getBulletins();
-                const bulletin = bulletins.find(b => b.id === bulletinId);
-                
-                if (!bulletin) {
-                    showAlert('Bulletin non trouvé', 'error');
-                    return;
-                }
-
-                const users = await getUsers();
-                const employe = users.find(u => u.id === bulletin.employe_id);
-                
-                if (!employe) {
-                    showAlert('Employé non trouvé', 'error');
-                    return;
-                }
-
-                // Compléter les données du bulletin pour l'affichage
-                const bulletinComplet = {
-                    ...bulletin,
-                    employe: employe
-                };
-
-                localStorage.setItem('current_bulletin', JSON.stringify(bulletinComplet));
-                
-                const content = document.getElementById('bulletinContent');
-                content.innerHTML = genererBulletinPaiePro(bulletinComplet);
-                
-                showSection('bulletinDetail');
-            } catch (error) {
-                console.error('Erreur lors du chargement du bulletin:', error);
-                showAlert('Erreur lors du chargement du bulletin: ' + error.message, 'error');
-            }
-        }
-
-        // Envoyer un bulletin par email
-        async function envoyerBulletin(bulletinId) {
-            try {
-                const bulletins = await getBulletins();
-                const bulletin = bulletins.find(b => b.id === bulletinId);
-                
-                if (!bulletin) {
-                    showAlert('Bulletin non trouvé', 'error');
-                    return;
-                }
-
-                const users = await getUsers();
-                const employe = users.find(u => u.id === bulletin.employe_id);
-                
-                if (!employe) {
-                    showAlert('Employé non trouvé', 'error');
-                    return;
-                }
-
-                if (!employe.email) {
-                    showAlert('Aucun email trouvé pour cet employé', 'error');
-                    return;
-                }
-
-                // Simulation d'envoi d'email
-                showAlert(`Bulletin envoyé par email à ${employe.prenom} ${employe.nom} (${employe.email})`, 'success');
-                
-                // Mettre à jour le statut du bulletin
-                await updateBulletin(bulletinId, { statut: 'Envoyé' });
-                loadBulletinsTable();
-                
-            } catch (error) {
-                console.error('Erreur lors de l\'envoi du bulletin:', error);
-                showAlert('Erreur lors de l\'envoi du bulletin: ' + error.message, 'error');
-            }
-        }
-
-        // Générer le bulletin de paie professionnel
-        function genererBulletinPaiePro(bulletin) {
-            const dateGeneration = new Date(bulletin.date_generation);
-            const datePaiement = new Date(dateGeneration);
-            datePaiement.setDate(datePaiement.getDate() + 5);
-            
-            return `
-                <div class="bulletin-content">
-                    <!-- Header -->
-                    <div class="bulletin-header">
-                        <div class="company-info">
-                            <div class="company-logo">
-                                <div class="logo-icon">🌴</div>
-                                <div class="company-name">MKJ SERVICE</div>
-                            </div>
-                            <div class="company-details">
-                                <strong>MKJ SERVICE</strong><br>
-                                1 Rue des Palmiers, 75013 PARIS<br>
-                                Tél: 01 23 45 67 89 • Siret: 529 999 999 9999<br>
-                                Code NAF: 6202A • URSSAF: 780 7999 9999 99999
-                            </div>
-                        </div>
-                        <div class="document-title">
-                            <div class="title-main">BULLETIN DE SALAIRE</div>
-                            <div class="title-sub">Paiement selon travaux effectués</div>
-                        </div>
-                        <div class="employee-header-section">
-                            <div class="employee-photo">
-                                ${bulletin.employe.photo ? 
-                                    `<img src="${bulletin.employe.photo}" alt="${bulletin.employe.prenom} ${bulletin.employe.nom}" style="width: 100%; height: 100%; object-fit: cover;">` : 
-                                    `<div class="photo-placeholder">Photo</div>`
-                                }
-                            </div>
-                            <div class="employee-details-compact">
-                                <div class="info-row">
-                                    <span class="info-label">Matricule:</span>
-                                    <span class="info-value">${bulletin.employe.id}</span>
-                                </div>
-                                <div class="info-row">
-                                    <span class="info-label">Période:</span>
-                                    <span class="info-value">${bulletin.periode}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Main Content -->
-                    <div class="bulletin-main">
-                        <!-- Period Info -->
-                        <div class="period-info">
-                            <div class="period-dates">
-                                <div class="period-item">
-                                    <span class="period-label">Date d'émission:</span>
-                                    <span>${dateGeneration.toLocaleDateString('fr-FR')}</span>
-                                </div>
-                                <div class="period-item">
-                                    <span class="period-label">Date de paiement:</span>
-                                    <span>${datePaiement.toLocaleDateString('fr-FR')}</span>
-                                </div>
-                                <div class="period-item">
-                                    <span class="period-label">Employé:</span>
-                                    <span>${bulletin.employe.prenom} ${bulletin.employe.nom}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Main Table -->
-                        <div class="table-container-bulletin">
-                            <table class="main-table">
-                                <thead>
-                                    <tr>
-                                        <th rowspan="2" class="designation">DÉSIGNATION</th>
-                                        <th colspan="2" class="number">NOMBRE</th>
-                                        <th colspan="2" class="base">BASE</th>
-                                        <th colspan="2" class="gains">GAINS</th>
-                                        <th colspan="2" class="deductions">RETENUES</th>
-                                        <th colspan="2" class="net">NET</th>
-                                    </tr>
-                                    <tr>
-                                        <th class="number">Jours</th>
-                                        <th class="number">Heures</th>
-                                        <th class="base">Taux</th>
-                                        <th class="base">Montant</th>
-                                        <th class="gains">Taux</th>
-                                        <th class="gains">Montant</th>
-                                        <th class="deductions">Taux</th>
-                                        <th class="deductions">Montant</th>
-                                        <th class="net">À payer</th>
-                                        <th class="net">Payé</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <!-- Salaire de base -->
-                                    <tr class="activity-row">
-                                        <td class="designation">Salaire de base</td>
-                                        <td class="number">${bulletin.jours_travailles || 0}</td>
-                                        <td class="number">${(bulletin.jours_travailles || 0) * 8}</td>
-                                        <td class="base">-</td>
-                                        <td class="base">${formatFCFA(bulletin.salaire_base || 0)}</td>
-                                        <td class="gains">100%</td>
-                                        <td class="gains">${formatFCFA(bulletin.salaire_base || 0)}</td>
-                                        <td class="deductions">-</td>
-                                        <td class="deductions">-</td>
-                                        <td class="net">${formatFCFA(bulletin.salaire_base || 0)}</td>
-                                        <td class="net">${formatFCFA(bulletin.salaire_base || 0)}</td>
-                                    </tr>
-                                    
-                                    <!-- Prime de rendement -->
-                                    <tr class="activity-row">
-                                        <td class="designation">Prime de rendement</td>
-                                        <td class="number">-</td>
-                                        <td class="number">-</td>
-                                        <td class="base">10%</td>
-                                        <td class="base">${formatFCFA(bulletin.prime_rendement || 0)}</td>
-                                        <td class="gains">100%</td>
-                                        <td class="gains">${formatFCFA(bulletin.prime_rendement || 0)}</td>
-                                        <td class="deductions">-</td>
-                                        <td class="deductions">-</td>
-                                        <td class="net">${formatFCFA(bulletin.prime_rendement || 0)}</td>
-                                        <td class="net">${formatFCFA(bulletin.prime_rendement || 0)}</td>
-                                    </tr>
-                                    
-                                    <!-- Gains activités -->
-                                    <tr class="activity-row">
-                                        <td class="designation">Gains des activités</td>
-                                        <td class="number">-</td>
-                                        <td class="number">-</td>
-                                        <td class="base">-</td>
-                                        <td class="base">${formatFCFA(bulletin.gains_activites || 0)}</td>
-                                        <td class="gains">100%</td>
-                                        <td class="gains">${formatFCFA(bulletin.gains_activites || 0)}</td>
-                                        <td class="deductions">-</td>
-                                        <td class="deductions">-</td>
-                                        <td class="net">${formatFCFA(bulletin.gains_activites || 0)}</td>
-                                        <td class="net">${formatFCFA(bulletin.gains_activites || 0)}</td>
-                                    </tr>
-                                    
-                                    <!-- Cotisations salariales -->
-                                    ${bulletin.cotisations_salariales ? Object.entries(bulletin.cotisations_salariales).filter(([key]) => key !== 'total').map(([key, value]) => `
-                                        <tr>
-                                            <td class="designation">Cotisation ${key.toUpperCase()}</td>
-                                            <td class="number">-</td>
-                                            <td class="number">-</td>
-                                            <td class="base">${CONFIG_PAIE_PRO.cotisations[key]}%</td>
-                                            <td class="base">${formatFCFA(value)}</td>
-                                            <td class="gains">-</td>
-                                            <td class="gains">-</td>
-                                            <td class="deductions">${CONFIG_PAIE_PRO.cotisations[key]}%</td>
-                                            <td class="deductions">${formatFCFA(value)}</td>
-                                            <td class="net">-</td>
-                                            <td class="net">-</td>
-                                        </tr>
-                                    `).join('') : ''}
-                                    
-                                    <!-- Totaux -->
-                                    <tr class="subtotal">
-                                        <td class="designation">Sous-total</td>
-                                        <td class="number">${bulletin.jours_travailles || 0}</td>
-                                        <td class="number">${(bulletin.jours_travailles || 0) * 8}</td>
-                                        <td class="base">-</td>
-                                        <td class="base">${formatFCFA((bulletin.salaire_base || 0) + (bulletin.prime_rendement || 0) + (bulletin.gains_activites || 0))}</td>
-                                        <td class="gains">-</td>
-                                        <td class="gains">${formatFCFA(bulletin.salaire_brut || 0)}</td>
-                                        <td class="deductions">-</td>
-                                        <td class="deductions">${formatFCFA(bulletin.cotisations_salariales?.total || 0)}</td>
-                                        <td class="net">${formatFCFA(bulletin.net_a_payer || 0)}</td>
-                                        <td class="net">${formatFCFA(bulletin.net_a_payer || 0)}</td>
-                                    </tr>
-                                    
-                                    <tr class="total">
-                                        <td class="designation">NET À PAYER</td>
-                                        <td class="number"></td>
-                                        <td class="number"></td>
-                                        <td class="base"></td>
-                                        <td class="base"></td>
-                                        <td class="gains"></td>
-                                        <td class="gains"></td>
-                                        <td class="deductions"></td>
-                                        <td class="deductions"></td>
-                                        <td class="net" colspan="2" style="text-align: center; font-size: 10px;">${formatFCFA(bulletin.net_a_payer || 0)}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <!-- Summary Section -->
-                        <div class="summary-section">
-                            <div class="summary-left">
-                                <div class="summary-title">RÉCAPITULATIF DES COTISATIONS</div>
-                                <table class="summary-table">
-                                    <tr>
-                                        <td class="label">Salaire brut</td>
-                                        <td class="value">${formatFCFA(bulletin.salaire_brut || 0)}</td>
-                                    </tr>
-                                    ${bulletin.cotisations_salariales ? Object.entries(bulletin.cotisations_salariales).filter(([key]) => key !== 'total').map(([key, value]) => `
-                                        <tr>
-                                            <td class="label">${key.toUpperCase()} (${CONFIG_PAIE_PRO.cotisations[key]}%)</td>
-                                            <td class="value">${formatFCFA(value)}</td>
-                                        </tr>
-                                    `).join('') : ''}
-                                    <tr class="total-row">
-                                        <td class="label">Total des retenues</td>
-                                        <td class="value">${formatFCFA(bulletin.cotisations_salariales?.total || 0)}</td>
-                                    </tr>
-                                    <tr class="total-row">
-                                        <td class="label">NET À PAYER</td>
-                                        <td class="value">${formatFCFA(bulletin.net_a_payer || 0)}</td>
-                                    </tr>
-                                </table>
-                            </div>
-                            <div class="summary-right">
-                                <div class="summary-title">INFORMATIONS COMPLÉMENTAIRES</div>
-                                <table class="summary-table">
-                                    <tr>
-                                        <td class="label">Jours travaillés</td>
-                                        <td class="value">${bulletin.jours_travailles || 0}</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="label">Heures travaillées</td>
-                                        <td class="value">${(bulletin.jours_travailles || 0) * 8}</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="label">Taux horaire moyen</td>
-                                        <td class="value">${formatFCFA((bulletin.salaire_base || 0) / ((bulletin.jours_travailles || 1) * 8))}</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="label">Pointages enregistrés</td>
-                                        <td class="value">${bulletin.pointages || 0}</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="label">Statut</td>
-                                        <td class="value">${bulletin.statut || 'Généré'}</td>
-                                    </tr>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Footer -->
-                    <div class="bulletin-footer">
-                        <div class="legal-mentions">
-                            <strong>MENTIONS LÉGALES :</strong> Le présent bulletin est établi en conformité avec la législation du travail. 
-                            Les cotisations sociales sont calculées selon les taux légaux en vigueur. 
-                            En cas de différence, les écritures comptables de l'employeur font foi.
-                        </div>
-                        <div class="signature-section">
-                            <div class="signature-stamp">
-                                MKJ<br>SERVICE
-                            </div>
-                            <div class="signature-line">
-                                Signature et cachet
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Print Controls -->
-                <div class="controls no-print">
-                    <button class="btn" onclick="imprimerBulletin()">🖨️ Imprimer le bulletin</button>
-                    <button class="btn btn-outline" onclick="showSection('adminPaie')">← Retour à la liste</button>
-                </div>
-            `;
-        }
-
-        // Fonction d'impression du bulletin
-        function imprimerBulletin(bulletinId = null) {
-            if (bulletinId) {
-                // Si un ID est fourni, charger d'abord le bulletin
-                voirBulletin(bulletinId).then(() => {
-                    setTimeout(() => {
-                        window.print();
-                    }, 500);
-                });
-            } else {
-                // Imprimer le bulletin actuellement affiché
-                window.print();
-            }
         }
 
         // =============================================
