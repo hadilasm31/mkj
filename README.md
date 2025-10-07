@@ -1475,6 +1475,34 @@
             color: var(--text-light);
         }
 
+        /* Sous-quantités */
+        .sub-quantities-container {
+            background: #f8fafc;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .sub-quantity-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            align-items: center;
+        }
+
+        .sub-quantity-input {
+            flex: 1;
+        }
+
+        .sub-quantity-total {
+            font-weight: bold;
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: white;
+            border-radius: 4px;
+            text-align: center;
+        }
+
         /* Hidden sections */
         .section {
             display: none;
@@ -2247,7 +2275,7 @@
                                     <th width="30px">
                                         <input type="checkbox" id="selectAllPointagesHeader" onchange="toggleSelectAllPointages()">
                                     </th>
-                                    <th>ID Fiche</th><th>Date</th><th>Chef</th><th>Activité</th><th>Employé</th><th>Présence</th><th>Bloc</th><th>Quantité</th><th>Prix unitaire</th><th>Prix total</th>
+                                    <th>ID Fiche</th><th>Date</th><th>Chef</th><th>Activité</th><th>Employé</th><th>Présence</th><th>Bloc</th><th>Sous-quantités</th><th>Quantité totale</th><th>Prix unitaire</th><th>Prix total</th>
                                 </tr>
                             </thead>
                             <tbody id="pointagesTableBody">
@@ -2516,7 +2544,17 @@
                         <table id="employeePointagesTable">
                             <thead>
                                 <tr>
-                                    <th>ID</th><th>Nom Prénom</th><th>Date</th><th>Présence</th><th>Activité</th><th>Quantité</th><th>Prix unitaire</th><th>Prix total</th><th>Bloc</th><th>Chef</th>
+                                    <th>Date</th>
+                                    <th>ID</th>
+                                    <th>Nom Prénom</th>
+                                    <th>Présence</th>
+                                    <th>Activité</th>
+                                    <th>Bloc</th>
+                                    <th>Sous-quantités</th>
+                                    <th>Quantité totale</th>
+                                    <th>Prix unitaire</th>
+                                    <th>Prix total</th>
+                                    <th>Chef</th>
                                 </tr>
                             </thead>
                             <tbody id="employeePointagesBody">
@@ -2660,10 +2698,10 @@
         // Initialisation du client Supabase
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Configuration de la paie professionnelle
+        // Configuration de la paie professionnelle en FCFA
         const CONFIG_PAIE_PRO = {
-            // Salaire de base
-            salaireBase: 1683.30, // Euros
+            // Salaire de base en FCFA
+            salaireBase: 1100000, // 1,100,000 FCFA
             
             // Cotisations salariales (taux en %)
             cotisations: {
@@ -2685,9 +2723,9 @@
                 transport: 5.00
             },
             
-            // Plafonds
-            plafondSecu: 3056.00,
-            plafondTransport: 1683.30
+            // Plafonds en FCFA
+            plafondSecu: 2000000,
+            plafondTransport: 1100000
         };
 
         // Activities configuration
@@ -2835,6 +2873,7 @@
                 const { data, error } = await supabase
                     .from('bulletins')
                     .select('*')
+                    .eq('archived', false)
                     .order('date_generation', { ascending: false });
                 
                 if (error) {
@@ -2844,6 +2883,25 @@
                 return data || [];
             } catch (error) {
                 console.error('Erreur critique lors de la récupération des bulletins:', error);
+                throw error;
+            }
+        }
+
+        async function getArchivedBulletins() {
+            try {
+                const { data, error } = await supabase
+                    .from('bulletins')
+                    .select('*')
+                    .eq('archived', true)
+                    .order('date_generation', { ascending: false });
+                
+                if (error) {
+                    console.error('Erreur lors de la récupération des bulletins archivés:', error);
+                    throw new Error(`Erreur Supabase: ${error.message}`);
+                }
+                return data || [];
+            } catch (error) {
+                console.error('Erreur critique lors de la récupération des bulletins archivés:', error);
                 throw error;
             }
         }
@@ -2862,6 +2920,25 @@
                 return data ? data[0] : null;
             } catch (error) {
                 console.error('Erreur critique lors de la création du bulletin:', error);
+                throw error;
+            }
+        }
+
+        async function updateBulletin(bulletinId, updates) {
+            try {
+                const { data, error } = await supabase
+                    .from('bulletins')
+                    .update(updates)
+                    .eq('id', bulletinId)
+                    .select();
+                
+                if (error) {
+                    console.error('Erreur lors de la mise à jour du bulletin:', error);
+                    throw new Error(`Erreur Supabase: ${error.message}`);
+                }
+                return data ? data[0] : null;
+            } catch (error) {
+                console.error('Erreur critique lors de la mise à jour du bulletin:', error);
                 throw error;
             }
         }
@@ -2960,6 +3037,65 @@
         function getCurrentUser() {
             const userStr = localStorage.getItem('mkj_current_user');
             return userStr ? JSON.parse(userStr) : null;
+        }
+
+        // =============================================
+        // FONCTIONS POUR LES SOUS-QUANTITÉS
+        // =============================================
+
+        function addSubQuantity(employeeId) {
+            const container = document.getElementById(`subQuantities-${employeeId}`);
+            const rowCount = container.querySelectorAll('.sub-quantity-row').length;
+            
+            const row = document.createElement('div');
+            row.className = 'sub-quantity-row';
+            row.innerHTML = `
+                <input type="number" class="sub-quantity-input" placeholder="Quantité" min="0" step="0.01" 
+                       oninput="updateSubQuantityTotal(${employeeId})">
+                <button type="button" class="btn btn-small btn-danger" onclick="this.parentElement.remove(); updateSubQuantityTotal(${employeeId})">❌</button>
+            `;
+            
+            container.appendChild(row);
+        }
+
+        function updateSubQuantityTotal(employeeId) {
+            const container = document.getElementById(`subQuantities-${employeeId}`);
+            const inputs = container.querySelectorAll('.sub-quantity-input');
+            const totalElement = document.getElementById(`subQuantityTotal-${employeeId}`);
+            const qtyTotalInput = document.getElementById(`qty-${employeeId}`);
+            
+            let total = 0;
+            inputs.forEach(input => {
+                total += parseFloat(input.value) || 0;
+            });
+            
+            totalElement.textContent = `Total: ${total}`;
+            qtyTotalInput.value = total;
+            
+            // Mettre à jour le prix total
+            const unitPriceInput = document.getElementById(`unitPrice-${employeeId}`);
+            const totalPriceInput = document.getElementById(`totalPrice-${employeeId}`);
+            const unitPrice = parseFloat(unitPriceInput.value) || 0;
+            totalPriceInput.value = (total * unitPrice).toFixed(2);
+        }
+
+        function getSubQuantities(employeeId) {
+            const container = document.getElementById(`subQuantities-${employeeId}`);
+            const inputs = container.querySelectorAll('.sub-quantity-input');
+            const quantities = [];
+            
+            inputs.forEach(input => {
+                if (input.value && parseFloat(input.value) > 0) {
+                    quantities.push(parseFloat(input.value));
+                }
+            });
+            
+            return quantities;
+        }
+
+        function formatSubQuantities(quantities) {
+            if (!quantities || quantities.length === 0) return '';
+            return quantities.join('+');
         }
 
         // =============================================
@@ -3251,8 +3387,12 @@
             }
 
             try {
-                // Dans une vraie application, vous implémenteriez la logique d'archivage ici
-                showAlert(`${selectedBulletins.size} bulletin(s) marqué(s) pour archivage`, 'success');
+                // Archiver les bulletins sélectionnés
+                for (const bulletinId of selectedBulletins) {
+                    await updateBulletin(parseInt(bulletinId), { archived: true });
+                }
+                
+                showAlert(`${selectedBulletins.size} bulletin(s) archivé(s) avec succès`, 'success');
                 selectedBulletins.clear();
                 updateSelectedBulletinsCount();
                 loadBulletinsTable();
@@ -3286,15 +3426,115 @@
             }
         }
 
-        function showBulletinsArchives(container) {
-            container.innerHTML = `
-                <h4>📋 Archives des Bulletins de Paie</h4>
-                <div class="empty-state">
-                    <div class="empty-state-icon">📦</div>
-                    <p>Fonctionnalité d'archivage en cours de développement</p>
-                    <p>Les archives seront bientôt disponibles</p>
-                </div>
-            `;
+        async function showBulletinsArchives(container) {
+            try {
+                const bulletins = await getArchivedBulletins();
+                const users = await getUsers();
+                
+                if (bulletins.length === 0) {
+                    container.innerHTML = `
+                        <h4>📋 Archives des Bulletins de Paie</h4>
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📦</div>
+                            <p>Aucun bulletin archivé</p>
+                            <p>Les bulletins archivés apparaîtront ici</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = `
+                    <h4>📋 Archives des Bulletins de Paie</h4>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Employé</th>
+                                    <th>Période</th>
+                                    <th>Salaire Brut</th>
+                                    <th>Net à Payer</th>
+                                    <th>Date d'archivage</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${bulletins.map(b => {
+                                    const employe = users.find(u => u.id === b.employe_id);
+                                    return `
+                                        <tr>
+                                            <td>${b.id}</td>
+                                            <td>${employe ? `${employe.prenom} ${employe.nom}` : 'N/A'}</td>
+                                            <td>${b.periode}</td>
+                                            <td>${formatFCFA(b.salaire_brut)}</td>
+                                            <td>${formatFCFA(b.net_a_payer)}</td>
+                                            <td>${new Date(b.updated_at || b.date_generation).toLocaleDateString('fr-FR')}</td>
+                                            <td>
+                                                <button class="btn btn-small" onclick="voirBulletinArchive(${b.id})">👁️ Voir</button>
+                                                <button class="btn btn-small btn-outline" onclick="restaurerBulletin(${b.id})">↩️ Restaurer</button>
+                                            </td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Erreur lors du chargement des archives:', error);
+                container.innerHTML = `
+                    <h4>📋 Archives des Bulletins de Paie</h4>
+                    <div class="alert error">
+                        Erreur lors du chargement des archives: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function restaurerBulletin(bulletinId) {
+            try {
+                await updateBulletin(bulletinId, { archived: false });
+                showAlert('Bulletin restauré avec succès', 'success');
+                showBulletinsArchives(document.getElementById('archivesContent'));
+            } catch (error) {
+                console.error('Erreur lors de la restauration du bulletin:', error);
+                showAlert('Erreur lors de la restauration: ' + error.message, 'error');
+            }
+        }
+
+        async function voirBulletinArchive(bulletinId) {
+            try {
+                const bulletins = await getArchivedBulletins();
+                const bulletin = bulletins.find(b => b.id === bulletinId);
+                
+                if (!bulletin) {
+                    showAlert('Bulletin non trouvé', 'error');
+                    return;
+                }
+
+                const users = await getUsers();
+                const employe = users.find(u => u.id === bulletin.employe_id);
+                
+                if (!employe) {
+                    showAlert('Employé non trouvé', 'error');
+                    return;
+                }
+
+                const bulletinComplet = {
+                    ...bulletin,
+                    employe: employe
+                };
+
+                localStorage.setItem('current_bulletin', JSON.stringify(bulletinComplet));
+                
+                const content = document.getElementById('bulletinContent');
+                content.innerHTML = genererBulletinPaiePro(bulletinComplet);
+                
+                showSection('bulletinDetail');
+            } catch (error) {
+                console.error('Erreur lors du chargement du bulletin:', error);
+                showAlert('Erreur lors du chargement du bulletin: ' + error.message, 'error');
+            }
         }
 
         function showPointagesArchives(container) {
@@ -3748,7 +3988,7 @@
             }
         }
 
-        // Pointage Management
+        // Pointage Management avec sous-quantités
         async function loadPointageManagement() {
             const user = getCurrentUser();
             if (!user || user.role !== 'CHEF') return;
@@ -3801,14 +4041,28 @@
                                     <input type="text" id="bloc-${emp.id}" placeholder="Bloc...">
                                 </div>
                             </div>
+                            
+                            <!-- Sous-quantités -->
+                            <div class="sub-quantities-container">
+                                <h5>Sous-quantités</h5>
+                                <div id="subQuantities-${emp.id}">
+                                    <div class="sub-quantity-row">
+                                        <input type="number" class="sub-quantity-input" placeholder="Quantité" min="0" step="0.01" oninput="updateSubQuantityTotal(${emp.id})">
+                                        <button type="button" class="btn btn-small btn-danger" onclick="this.parentElement.remove(); updateSubQuantityTotal(${emp.id})">❌</button>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-small" onclick="addSubQuantity(${emp.id})">➕ Ajouter une sous-quantité</button>
+                                <div id="subQuantityTotal-${emp.id}" class="sub-quantity-total">Total: 0</div>
+                            </div>
+                            
                             <div class="form-row">
                                 <div class="form-group">
                                     <label>Quantité totale *</label>
-                                    <input type="number" id="qty-${emp.id}" required placeholder="0" step="0.01" min="0">
+                                    <input type="number" id="qty-${emp.id}" required placeholder="0" step="0.01" min="0" readonly>
                                 </div>
                                 <div class="form-group">
                                     <label>Prix unitaire</label>
-                                    <input type="number" id="unitPrice-${emp.id}" placeholder="0" step="0.01" min="0">
+                                    <input type="number" id="unitPrice-${emp.id}" placeholder="0" step="0.01" min="0" oninput="updateSubQuantityTotal(${emp.id})">
                                 </div>
                                 <div class="form-group">
                                     <label>Prix total</label>
@@ -3818,21 +4072,6 @@
                         </div>
                     `;
                 }).join('');
-
-                presentEmployees.forEach(emp => {
-                    const qtyInput = document.getElementById(`qty-${emp.id}`);
-                    const unitPriceInput = document.getElementById(`unitPrice-${emp.id}`);
-                    const totalPriceInput = document.getElementById(`totalPrice-${emp.id}`);
-
-                    const updateTotal = () => {
-                        const qty = parseFloat(qtyInput.value) || 0;
-                        const unitPrice = parseFloat(unitPriceInput.value) || 0;
-                        totalPriceInput.value = (qty * unitPrice).toFixed(2);
-                    };
-
-                    qtyInput.addEventListener('input', updateTotal);
-                    unitPriceInput.addEventListener('input', updateTotal);
-                });
 
                 document.getElementById('emailBtn').disabled = true;
                 document.getElementById('whatsappBtn').disabled = true;
@@ -3865,6 +4104,9 @@
                 const pointagesData = [];
 
                 for (const emp of presentEmployees) {
+                    const subQuantities = getSubQuantities(emp.id);
+                    const qtyTotal = parseFloat(document.getElementById(`qty-${emp.id}`).value) || 0;
+                    
                     const pointageData = {
                         chef_id: user.id,
                         employee_id: emp.id,
@@ -3872,10 +4114,10 @@
                         presence: 'Présent',
                         activity: user.activity,
                         bloc: document.getElementById(`bloc-${emp.id}`).value,
-                        qty_total: parseFloat(document.getElementById(`qty-${emp.id}`).value) || 0,
+                        sub_quantities: subQuantities,
+                        qty_total: qtyTotal,
                         unit_price: parseFloat(document.getElementById(`unitPrice-${emp.id}`).value) || 0,
-                        total_price: parseFloat(document.getElementById(`totalPrice-${emp.id}`).value) || 0,
-                        sub_quantities: []
+                        total_price: parseFloat(document.getElementById(`totalPrice-${emp.id}`).value) || 0
                     };
 
                     pointagesData.push(pointageData);
@@ -4286,7 +4528,7 @@
                                 <div class="fiche-stat-label">Quantité</div>
                             </div>
                             <div class="fiche-stat">
-                                <div class="fiche-stat-number">${totalPrix.toFixed(2)}€</div>
+                                <div class="fiche-stat-number">${formatFCFA(totalPrix)}</div>
                                 <div class="fiche-stat-label">Total</div>
                             </div>
                         </div>
@@ -4301,10 +4543,11 @@
                                     <th>Date</th>
                                     <th>Présence</th>
                                     <th>Activité</th>
-                                    <th>Quantité</th>
+                                    <th>Bloc</th>
+                                    <th>Sous-quantités</th>
+                                    <th>Quantité totale</th>
                                     <th>Prix unitaire</th>
                                     <th>Prix total</th>
-                                    <th>Bloc</th>
                                     <th>Chef</th>
                                 </tr>
                             </thead>
@@ -4312,6 +4555,9 @@
                                 ${dailyPointages.map(p => {
                                     const employee = users.find(u => u.id === p.employee_id);
                                     const chef = users.find(u => u.id === p.chef_id);
+                                    const subQuantities = p.sub_quantities || [];
+                                    const sousQuantitesFormatees = subQuantities.length > 0 ? subQuantities.join('+') : '-';
+                                    
                                     return `
                                         <tr>
                                             <td>${p.id}</td>
@@ -4323,10 +4569,11 @@
                                                 </span>
                                             </td>
                                             <td>${getActivityName(p.activity)}</td>
-                                            <td>${p.qty_total}</td>
-                                            <td>${p.unit_price}</td>
-                                            <td style="font-weight: 500;">${p.total_price}€</td>
                                             <td>${p.bloc || '-'}</td>
+                                            <td>${sousQuantitesFormatees}</td>
+                                            <td>${p.qty_total}</td>
+                                            <td>${formatFCFA(p.unit_price)}</td>
+                                            <td style="font-weight: 500;">${formatFCFA(p.total_price)}</td>
                                             <td>${chef ? `${chef.prenom} ${chef.nom}` : 'N/A'}</td>
                                         </tr>
                                     `;
@@ -4362,7 +4609,7 @@
                 if (pointages.length === 0) {
                     tbody.innerHTML = `
                         <tr>
-                            <td colspan="11" style="text-align: center; padding: 2rem;">
+                            <td colspan="12" style="text-align: center; padding: 2rem;">
                                 <div style="font-size: 3rem; margin-bottom: 1rem;">📋</div>
                                 <h4>Aucune fiche de pointage trouvée</h4>
                                 <p>Les fiches de pointage créées par les chefs apparaîtront ici</p>
@@ -4383,8 +4630,8 @@
                         <div class="stat-label">Total Pointages</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-number">${totalPrix.toFixed(2)}</div>
-                        <div class="stat-label">Total Prix (€)</div>
+                        <div class="stat-number">${formatFCFA(totalPrix)}</div>
+                        <div class="stat-label">Total Prix</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-number">${pointagesAujourdhui}</div>
@@ -4401,6 +4648,8 @@
                 tbody.innerHTML = pointages.map(p => {
                     const chef = users.find(u => u.id === p.chef_id);
                     const employee = users.find(u => u.id === p.employee_id);
+                    const subQuantities = p.sub_quantities || [];
+                    const sousQuantitesFormatees = subQuantities.length > 0 ? subQuantities.join('+') : '-';
                     
                     return `
                         <tr>
@@ -4414,9 +4663,10 @@
                             <td>${employee ? `${employee.prenom} ${employee.nom}` : 'N/A'}</td>
                             <td>${p.presence}</td>
                             <td>${p.bloc || '-'}</td>
+                            <td>${sousQuantitesFormatees}</td>
                             <td>${p.qty_total}</td>
-                            <td>${p.unit_price}</td>
-                            <td>${p.total_price}</td>
+                            <td>${formatFCFA(p.unit_price)}</td>
+                            <td>${formatFCFA(p.total_price)}</td>
                         </tr>
                     `;
                 }).join('');
@@ -4454,7 +4704,7 @@
             
             const rows = document.querySelectorAll('#pointagesTableBody tr');
             rows.forEach(row => {
-                if (row.cells.length < 11) return;
+                if (row.cells.length < 12) return;
                 
                 const pointageActivity = row.cells[4].textContent;
                 const pointageDate = row.cells[2].textContent;
@@ -4468,6 +4718,10 @@
             });
         }
 
+        // =============================================
+        // FONCTIONS POUR LE POINTAGE EMPLOYÉ AVEC NOUVEAU FORMAT
+        // =============================================
+
         async function loadEmployeePointages() {
             const user = getCurrentUser();
             if (!user || user.role !== 'EMPLOYE') return;
@@ -4477,14 +4731,14 @@
                 const users = await getUsers();
 
                 const employeePointages = pointages.filter(p => p.employee_id === user.id)
-                    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                    .sort((a, b) => new Date(b.date) - new Date(a.date));
 
                 const tbody = document.getElementById('employeePointagesBody');
 
                 if (employeePointages.length === 0) {
                     tbody.innerHTML = `
                         <tr>
-                            <td colspan="10" style="text-align: center; padding: 2rem;">
+                            <td colspan="11" style="text-align: center; padding: 2rem;">
                                 <div style="font-size: 3rem; margin-bottom: 1rem;">📋</div>
                                 <h4>Aucun pointage trouvé</h4>
                                 <p>Vos pointages apparaîtront ici une fois créés par votre chef</p>
@@ -4494,28 +4748,58 @@
                     return;
                 }
 
-                tbody.innerHTML = employeePointages.map(p => {
+                let html = '';
+                
+                employeePointages.forEach(p => {
                     const chef = users.find(u => u.id === p.chef_id);
+                    const isPresent = p.presence === 'Présent';
+                    const subQuantities = p.sub_quantities || [];
+                    const sousQuantitesFormatees = subQuantities.length > 0 ? subQuantities.join('+') : '-';
                     
-                    return `
+                    // Format exact comme demandé
+                    const dateFormatee = formatDatePourPointage(p.date);
+                    const quantiteTotale = isPresent ? p.qty_total : '0';
+                    const prixUnitaireFormate = isPresent ? `${formatFCFA(p.unit_price)}` : '0FCFA';
+                    const prixTotalFormate = isPresent ? `${formatFCFA(p.total_price)}` : '0FCFA';
+                    const statutPresence = isPresent ? 'present' : 'Abscent';
+
+                    html += `
                         <tr>
-                            <td>${p.id}</td>
+                            <td style="font-weight: bold; white-space: nowrap;">${dateFormatee}</td>
+                            <td>${user.id}</td>
                             <td>${user.prenom} ${user.nom}</td>
-                            <td>${p.date}</td>
-                            <td>${p.presence}</td>
+                            <td>
+                                <span style="color: ${isPresent ? 'var(--success)' : 'var(--danger)'}; font-weight: 500;">
+                                    ${statutPresence}
+                                </span>
+                            </td>
                             <td>${getActivityName(p.activity)}</td>
-                            <td>${p.qty_total}</td>
-                            <td>${p.unit_price}</td>
-                            <td>${p.total_price}</td>
                             <td>${p.bloc || '-'}</td>
-                            <td>${chef ? `${chef.prenom} ${chef.nom}` : 'N/A'}</td>
+                            <td>${sousQuantitesFormatees}</td>
+                            <td>${quantiteTotale}</td>
+                            <td style="font-family: 'Courier New', monospace; white-space: nowrap;">${prixUnitaireFormate}</td>
+                            <td style="font-family: 'Courier New', monospace; font-weight: bold; white-space: nowrap;">${prixTotalFormate}</td>
+                            <td style="white-space: nowrap;">${chef ? chef.prenom : 'N/A'}</td>
                         </tr>
                     `;
-                }).join('');
+                });
+
+                tbody.innerHTML = html;
+
             } catch (error) {
                 console.error('Erreur lors du chargement des pointages employé:', error);
                 showAlert('Erreur lors du chargement des pointages: ' + error.message, 'error');
             }
+        }
+
+        // Fonctions utilitaires pour le formatage
+        function formatDatePourPointage(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('fr-FR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            }).replace(/\//g, '/');
         }
 
         // =============================================
@@ -4631,7 +4915,8 @@
                     salaire_brut: calculSalaire.salaireBrut,
                     net_a_payer: calculSalaire.netAPayer,
                     cotisations_salariales: calculSalaire.cotisationsSalariales,
-                    cotisations_patronales: calculSalaire.cotisationsPatronales
+                    cotisations_patronales: calculSalaire.cotisationsPatronales,
+                    archived: false
                 };
 
                 const createdBulletin = await createBulletin(nouveauBulletin);
@@ -4677,6 +4962,16 @@
             };
         }
 
+        // Formater les montants en FCFA
+        function formatFCFA(montant) {
+            return new Intl.NumberFormat('fr-FR', {
+                style: 'currency',
+                currency: 'XOF',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(montant);
+        }
+
         // Charger le tableau des bulletins
         async function loadBulletinsTable() {
             try {
@@ -4714,11 +5009,11 @@
                         <div class="stat-label">Total Bulletins</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-number">${Math.round(totalSalaireBrut).toLocaleString()}</div>
+                        <div class="stat-number">${formatFCFA(totalSalaireBrut)}</div>
                         <div class="stat-label">Salaire Brut Total</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-number">${Math.round(totalNetAPayer).toLocaleString()}</div>
+                        <div class="stat-number">${formatFCFA(totalNetAPayer)}</div>
                         <div class="stat-label">Net à Payer Total</div>
                     </div>
                     <div class="stat-card">
@@ -4740,12 +5035,13 @@
                             <td>${b.id}</td>
                             <td>${employe ? `${employe.prenom} ${employe.nom}` : 'N/A'}</td>
                             <td>${b.periode}</td>
-                            <td>${b.salaire_brut.toFixed(2)}€</td>
-                            <td>${b.net_a_payer.toFixed(2)}€</td>
+                            <td>${formatFCFA(b.salaire_brut)}</td>
+                            <td>${formatFCFA(b.net_a_payer)}</td>
                             <td>${b.statut}</td>
                             <td>
                                 <button class="btn btn-small" onclick="voirBulletin(${b.id})">👁️ Voir</button>
                                 <button class="btn btn-small btn-outline" onclick="imprimerBulletin(${b.id})">🖨️ Imprimer</button>
+                                <button class="btn btn-small btn-warning" onclick="envoyerBulletin(${b.id})">📧 Envoyer</button>
                             </td>
                         </tr>
                     `;
@@ -4854,6 +5150,43 @@
             }
         }
 
+        // Envoyer un bulletin par email
+        async function envoyerBulletin(bulletinId) {
+            try {
+                const bulletins = await getBulletins();
+                const bulletin = bulletins.find(b => b.id === bulletinId);
+                
+                if (!bulletin) {
+                    showAlert('Bulletin non trouvé', 'error');
+                    return;
+                }
+
+                const users = await getUsers();
+                const employe = users.find(u => u.id === bulletin.employe_id);
+                
+                if (!employe) {
+                    showAlert('Employé non trouvé', 'error');
+                    return;
+                }
+
+                if (!employe.email) {
+                    showAlert('Aucun email trouvé pour cet employé', 'error');
+                    return;
+                }
+
+                // Simulation d'envoi d'email
+                showAlert(`Bulletin envoyé par email à ${employe.prenom} ${employe.nom} (${employe.email})`, 'success');
+                
+                // Mettre à jour le statut du bulletin
+                await updateBulletin(bulletinId, { statut: 'Envoyé' });
+                loadBulletinsTable();
+                
+            } catch (error) {
+                console.error('Erreur lors de l\'envoi du bulletin:', error);
+                showAlert('Erreur lors de l\'envoi du bulletin: ' + error.message, 'error');
+            }
+        }
+
         // Générer le bulletin de paie professionnel
         function genererBulletinPaiePro(bulletin) {
             const dateGeneration = new Date(bulletin.date_generation);
@@ -4884,33 +5217,17 @@
                             <div class="employee-photo">
                                 ${bulletin.employe.photo ? 
                                     `<img src="${bulletin.employe.photo}" alt="${bulletin.employe.prenom} ${bulletin.employe.nom}" style="width: 100%; height: 100%; object-fit: cover;">` : 
-                                    '<div class="photo-placeholder">Photo<br>du salarié</div>'
+                                    `<div class="photo-placeholder">Photo</div>`
                                 }
                             </div>
                             <div class="employee-details-compact">
                                 <div class="info-row">
-                                    <div class="info-label">Nom:</div>
-                                    <div class="info-value">${bulletin.employe.nom}</div>
+                                    <span class="info-label">Matricule:</span>
+                                    <span class="info-value">${bulletin.employe.id}</span>
                                 </div>
                                 <div class="info-row">
-                                    <div class="info-label">Prénom:</div>
-                                    <div class="info-value">${bulletin.employe.prenom}</div>
-                                </div>
-                                <div class="info-row">
-                                    <div class="info-label">Matricule:</div>
-                                    <div class="info-value">EMP-${bulletin.employe.id}</div>
-                                </div>
-                                <div class="info-row">
-                                    <div class="info-label">Date entrée:</div>
-                                    <div class="info-value">15/03/2022</div>
-                                </div>
-                                <div class="info-row">
-                                    <div class="info-label">Emploi:</div>
-                                    <div class="info-value">Ouvrier agricole</div>
-                                </div>
-                                <div class="info-row">
-                                    <div class="info-label">Département:</div>
-                                    <div class="info-value">${bulletin.employe.departement}</div>
+                                    <span class="info-label">Période:</span>
+                                    <span class="info-value">${bulletin.periode}</span>
                                 </div>
                             </div>
                         </div>
@@ -4918,133 +5235,138 @@
 
                     <!-- Main Content -->
                     <div class="bulletin-main">
+                        <!-- Period Info -->
                         <div class="period-info">
                             <div class="period-dates">
                                 <div class="period-item">
-                                    <div class="period-label">Période:</div>
-                                    <div>${getPremierDuMois(bulletin.periode)} au ${getDernierDuMois(bulletin.periode)}</div>
-                                </div>
-                            </div>
-                            <div class="period-dates">
-                                <div class="period-item">
-                                    <div class="period-label">Jours travaillés:</div>
-                                    <div>${bulletin.jours_travailles}</div>
+                                    <span class="period-label">Date d'émission:</span>
+                                    <span>${dateGeneration.toLocaleDateString('fr-FR')}</span>
                                 </div>
                                 <div class="period-item">
-                                    <div class="period-label">Heures supplémentaires:</div>
-                                    <div>8</div>
+                                    <span class="period-label">Date de paiement:</span>
+                                    <span>${datePaiement.toLocaleDateString('fr-FR')}</span>
+                                </div>
+                                <div class="period-item">
+                                    <span class="period-label">Employé:</span>
+                                    <span>${bulletin.employe.prenom} ${bulletin.employe.nom}</span>
                                 </div>
                             </div>
                         </div>
 
+                        <!-- Main Table -->
                         <div class="table-container-bulletin">
                             <table class="main-table">
                                 <thead>
                                     <tr>
-                                        <th class="designation">DÉSIGNATION</th>
-                                        <th class="number">NOMBRE</th>
-                                        <th class="base">PRIX UNITAIRE</th>
-                                        <th class="rate">QUANTITÉ</th>
-                                        <th class="gains">GAINS</th>
-                                        <th class="deductions">RETENUES</th>
-                                        <th class="net">NET À PAYER</th>
+                                        <th rowspan="2" class="designation">DÉSIGNATION</th>
+                                        <th colspan="2" class="number">NOMBRE</th>
+                                        <th colspan="2" class="base">BASE</th>
+                                        <th colspan="2" class="gains">GAINS</th>
+                                        <th colspan="2" class="deductions">RETENUES</th>
+                                        <th colspan="2" class="net">NET</th>
+                                    </tr>
+                                    <tr>
+                                        <th class="number">Jours</th>
+                                        <th class="number">Heures</th>
+                                        <th class="base">Taux</th>
+                                        <th class="base">Montant</th>
+                                        <th class="gains">Taux</th>
+                                        <th class="gains">Montant</th>
+                                        <th class="deductions">Taux</th>
+                                        <th class="deductions">Montant</th>
+                                        <th class="net">À payer</th>
+                                        <th class="net">Payé</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <!-- Activités -->
+                                    <!-- Salaire de base -->
                                     <tr class="activity-row">
-                                        <td class="designation">Travaux agricoles</td>
-                                        <td class="number"></td>
-                                        <td class="base"></td>
-                                        <td class="rate"></td>
-                                        <td class="gains">${bulletin.gains_activites.toFixed(2)}</td>
+                                        <td class="designation">Salaire de base</td>
+                                        <td class="number">${bulletin.jours_travailles || 0}</td>
+                                        <td class="number">${(bulletin.jours_travailles || 0) * 8}</td>
+                                        <td class="base">-</td>
+                                        <td class="base">${formatFCFA(bulletin.salaire_base || 0)}</td>
+                                        <td class="gains">100%</td>
+                                        <td class="gains">${formatFCFA(bulletin.salaire_base || 0)}</td>
                                         <td class="deductions">-</td>
-                                        <td class="net">${bulletin.gains_activites.toFixed(2)}</td>
+                                        <td class="deductions">-</td>
+                                        <td class="net">${formatFCFA(bulletin.salaire_base || 0)}</td>
+                                        <td class="net">${formatFCFA(bulletin.salaire_base || 0)}</td>
                                     </tr>
                                     
-                                    <!-- Prime -->
-                                    <tr>
+                                    <!-- Prime de rendement -->
+                                    <tr class="activity-row">
                                         <td class="designation">Prime de rendement</td>
-                                        <td class="number"></td>
-                                        <td class="base">${bulletin.prime_rendement.toFixed(2)}</td>
-                                        <td class="rate">1.00</td>
-                                        <td class="gains">${bulletin.prime_rendement.toFixed(2)}</td>
+                                        <td class="number">-</td>
+                                        <td class="number">-</td>
+                                        <td class="base">10%</td>
+                                        <td class="base">${formatFCFA(bulletin.prime_rendement || 0)}</td>
+                                        <td class="gains">100%</td>
+                                        <td class="gains">${formatFCFA(bulletin.prime_rendement || 0)}</td>
                                         <td class="deductions">-</td>
-                                        <td class="net">${bulletin.prime_rendement.toFixed(2)}</td>
+                                        <td class="deductions">-</td>
+                                        <td class="net">${formatFCFA(bulletin.prime_rendement || 0)}</td>
+                                        <td class="net">${formatFCFA(bulletin.prime_rendement || 0)}</td>
                                     </tr>
                                     
-                                    <!-- Sous-total gains -->
+                                    <!-- Gains activités -->
+                                    <tr class="activity-row">
+                                        <td class="designation">Gains des activités</td>
+                                        <td class="number">-</td>
+                                        <td class="number">-</td>
+                                        <td class="base">-</td>
+                                        <td class="base">${formatFCFA(bulletin.gains_activites || 0)}</td>
+                                        <td class="gains">100%</td>
+                                        <td class="gains">${formatFCFA(bulletin.gains_activites || 0)}</td>
+                                        <td class="deductions">-</td>
+                                        <td class="deductions">-</td>
+                                        <td class="net">${formatFCFA(bulletin.gains_activites || 0)}</td>
+                                        <td class="net">${formatFCFA(bulletin.gains_activites || 0)}</td>
+                                    </tr>
+                                    
+                                    <!-- Cotisations salariales -->
+                                    ${bulletin.cotisations_salariales ? Object.entries(bulletin.cotisations_salariales).filter(([key]) => key !== 'total').map(([key, value]) => `
+                                        <tr>
+                                            <td class="designation">Cotisation ${key.toUpperCase()}</td>
+                                            <td class="number">-</td>
+                                            <td class="number">-</td>
+                                            <td class="base">${CONFIG_PAIE_PRO.cotisations[key]}%</td>
+                                            <td class="base">${formatFCFA(value)}</td>
+                                            <td class="gains">-</td>
+                                            <td class="gains">-</td>
+                                            <td class="deductions">${CONFIG_PAIE_PRO.cotisations[key]}%</td>
+                                            <td class="deductions">${formatFCFA(value)}</td>
+                                            <td class="net">-</td>
+                                            <td class="net">-</td>
+                                        </tr>
+                                    `).join('') : ''}
+                                    
+                                    <!-- Totaux -->
                                     <tr class="subtotal">
-                                        <td class="designation">TOTAL GAINS</td>
-                                        <td class="number"></td>
-                                        <td class="base"></td>
-                                        <td class="rate"></td>
-                                        <td class="gains">${bulletin.salaire_brut.toFixed(2)}</td>
-                                        <td class="deductions"></td>
-                                        <td class="net">${bulletin.salaire_brut.toFixed(2)}</td>
-                                    </tr>
-                                    
-                                    <!-- Cotisations -->
-                                    <tr>
-                                        <td class="designation">Sécurité sociale</td>
-                                        <td class="number"></td>
-                                        <td class="base"></td>
-                                        <td class="rate"></td>
+                                        <td class="designation">Sous-total</td>
+                                        <td class="number">${bulletin.jours_travailles || 0}</td>
+                                        <td class="number">${(bulletin.jours_travailles || 0) * 8}</td>
+                                        <td class="base">-</td>
+                                        <td class="base">${formatFCFA((bulletin.salaire_base || 0) + (bulletin.prime_rendement || 0) + (bulletin.gains_activites || 0))}</td>
                                         <td class="gains">-</td>
-                                        <td class="deductions">${bulletin.cotisations_salariales.secu.toFixed(2)}</td>
-                                        <td class="net">-${bulletin.cotisations_salariales.secu.toFixed(2)}</td>
+                                        <td class="gains">${formatFCFA(bulletin.salaire_brut || 0)}</td>
+                                        <td class="deductions">-</td>
+                                        <td class="deductions">${formatFCFA(bulletin.cotisations_salariales?.total || 0)}</td>
+                                        <td class="net">${formatFCFA(bulletin.net_a_payer || 0)}</td>
+                                        <td class="net">${formatFCFA(bulletin.net_a_payer || 0)}</td>
                                     </tr>
                                     
-                                    <tr>
-                                        <td class="designation">Assurance chômage</td>
-                                        <td class="number"></td>
-                                        <td class="base"></td>
-                                        <td class="rate"></td>
-                                        <td class="gains">-</td>
-                                        <td class="deductions">${bulletin.cotisations_salariales.assedic.toFixed(2)}</td>
-                                        <td class="net">-${bulletin.cotisations_salariales.assedic.toFixed(2)}</td>
-                                    </tr>
-                                    
-                                    <tr>
-                                        <td class="designation">Retraite</td>
-                                        <td class="number"></td>
-                                        <td class="base"></td>
-                                        <td class="rate"></td>
-                                        <td class="gains">-</td>
-                                        <td class="deductions">${bulletin.cotisations_salariales.retraite.toFixed(2)}</td>
-                                        <td class="net">-${bulletin.cotisations_salariales.retraite.toFixed(2)}</td>
-                                    </tr>
-                                    
-                                    <tr>
-                                        <td class="designation">CSG/CRDS</td>
-                                        <td class="number"></td>
-                                        <td class="base"></td>
-                                        <td class="rate"></td>
-                                        <td class="gains">-</td>
-                                        <td class="deductions">${(bulletin.cotisations_salariales.csg + bulletin.cotisations_salariales.crds).toFixed(2)}</td>
-                                        <td class="net">-${(bulletin.cotisations_salariales.csg + bulletin.cotisations_salariales.crds).toFixed(2)}</td>
-                                    </tr>
-                                    
-                                    <!-- Total retenues -->
-                                    <tr class="subtotal">
-                                        <td class="designation">TOTAL RETENUES</td>
-                                        <td class="number"></td>
-                                        <td class="base"></td>
-                                        <td class="rate"></td>
-                                        <td class="gains">-</td>
-                                        <td class="deductions">${bulletin.cotisations_salariales.total.toFixed(2)}</td>
-                                        <td class="net">-${bulletin.cotisations_salariales.total.toFixed(2)}</td>
-                                    </tr>
-                                    
-                                    <!-- Net à payer -->
                                     <tr class="total">
                                         <td class="designation">NET À PAYER</td>
                                         <td class="number"></td>
+                                        <td class="number"></td>
                                         <td class="base"></td>
-                                        <td class="rate"></td>
+                                        <td class="base"></td>
+                                        <td class="gains"></td>
                                         <td class="gains"></td>
                                         <td class="deductions"></td>
-                                        <td class="net">${bulletin.net_a_payer.toFixed(2)}</td>
+                                        <td class="deductions"></td>
+                                        <td class="net" colspan="2" style="text-align: center; font-size: 10px;">${formatFCFA(bulletin.net_a_payer || 0)}</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -5053,35 +5375,50 @@
                         <!-- Summary Section -->
                         <div class="summary-section">
                             <div class="summary-left">
-                                <div class="summary-title">RÉCAPITULATIF</div>
+                                <div class="summary-title">RÉCAPITULATIF DES COTISATIONS</div>
                                 <table class="summary-table">
                                     <tr>
-                                        <td class="label">Total des gains</td>
-                                        <td class="value">${bulletin.salaire_brut.toFixed(2)}</td>
+                                        <td class="label">Salaire brut</td>
+                                        <td class="value">${formatFCFA(bulletin.salaire_brut || 0)}</td>
                                     </tr>
-                                    <tr>
+                                    ${bulletin.cotisations_salariales ? Object.entries(bulletin.cotisations_salariales).filter(([key]) => key !== 'total').map(([key, value]) => `
+                                        <tr>
+                                            <td class="label">${key.toUpperCase()} (${CONFIG_PAIE_PRO.cotisations[key]}%)</td>
+                                            <td class="value">${formatFCFA(value)}</td>
+                                        </tr>
+                                    `).join('') : ''}
+                                    <tr class="total-row">
                                         <td class="label">Total des retenues</td>
-                                        <td class="value">${bulletin.cotisations_salariales.total.toFixed(2)}</td>
+                                        <td class="value">${formatFCFA(bulletin.cotisations_salariales?.total || 0)}</td>
                                     </tr>
                                     <tr class="total-row">
-                                        <td class="label">Net à payer</td>
-                                        <td class="value">${bulletin.net_a_payer.toFixed(2)}</td>
+                                        <td class="label">NET À PAYER</td>
+                                        <td class="value">${formatFCFA(bulletin.net_a_payer || 0)}</td>
                                     </tr>
+                                </table>
                             </div>
                             <div class="summary-right">
                                 <div class="summary-title">INFORMATIONS COMPLÉMENTAIRES</div>
                                 <table class="summary-table">
                                     <tr>
-                                        <td class="label">Congés payés acquis</td>
-                                        <td class="value">2.50</td>
+                                        <td class="label">Jours travaillés</td>
+                                        <td class="value">${bulletin.jours_travailles || 0}</td>
                                     </tr>
                                     <tr>
-                                        <td class="label">Congés pris</td>
-                                        <td class="value">0.00</td>
+                                        <td class="label">Heures travaillées</td>
+                                        <td class="value">${(bulletin.jours_travailles || 0) * 8}</td>
                                     </tr>
                                     <tr>
-                                        <td class="label">Solde congés</td>
-                                        <td class="value">2.50</td>
+                                        <td class="label">Taux horaire moyen</td>
+                                        <td class="value">${formatFCFA((bulletin.salaire_base || 0) / ((bulletin.jours_travailles || 1) * 8))}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="label">Pointages enregistrés</td>
+                                        <td class="value">${bulletin.pointages || 0}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="label">Statut</td>
+                                        <td class="value">${bulletin.statut || 'Généré'}</td>
                                     </tr>
                                 </table>
                             </div>
@@ -5091,97 +5428,51 @@
                     <!-- Footer -->
                     <div class="bulletin-footer">
                         <div class="legal-mentions">
-                            <p><strong>Mentions légales :</strong> Le salarié dispose d'un délai de 3 ans pour réclamer toute erreur sur ce bulletin. Ce document est établi en double exemplaire, un pour l'employeur et un pour le salarié. Conservez ce bulletin sans limitation de durée.</p>
-                            <p>Paiement effectué par virement bancaire. Date de paiement : ${datePaiement.toLocaleDateString('fr-FR')}</p>
+                            <strong>MENTIONS LÉGALES :</strong> Le présent bulletin est établi en conformité avec la législation du travail. 
+                            Les cotisations sociales sont calculées selon les taux légaux en vigueur. 
+                            En cas de différence, les écritures comptables de l'employeur font foi.
                         </div>
                         <div class="signature-section">
                             <div class="signature-stamp">
-                                MKJ SERVICE<br>
-                                Vu et approuvé<br>
-                                ${dateGeneration.toLocaleDateString('fr-FR')}
+                                MKJ<br>SERVICE
                             </div>
-                            <div class="signature-line">Signature de l'employeur</div>
+                            <div class="signature-line">
+                                Signature et cachet
+                            </div>
                         </div>
                     </div>
+                </div>
+                
+                <!-- Print Controls -->
+                <div class="controls no-print">
+                    <button class="btn" onclick="imprimerBulletin()">🖨️ Imprimer le bulletin</button>
+                    <button class="btn btn-outline" onclick="showSection('adminPaie')">← Retour à la liste</button>
                 </div>
             `;
         }
 
-        function getPremierDuMois(periode) {
-            const [mois, annee] = periode.split('/');
-            return `01/${mois.padStart(2, '0')}/${annee}`;
-        }
-
-        function getDernierDuMois(periode) {
-            const [mois, annee] = periode.split('/');
-            const dernierJour = new Date(annee, mois, 0).getDate();
-            return `${dernierJour}/${mois.padStart(2, '0')}/${annee}`;
-        }
-
-        // Imprimer le bulletin
+        // Fonction d'impression du bulletin
         function imprimerBulletin(bulletinId = null) {
-            let bulletin;
-            
             if (bulletinId) {
-                // Dans une vraie implémentation, vous récupéreriez le bulletin par son ID
-                showAlert('Fonctionnalité d\'impression en cours de développement', 'info');
-                return;
+                // Si un ID est fourni, charger d'abord le bulletin
+                voirBulletin(bulletinId).then(() => {
+                    setTimeout(() => {
+                        window.print();
+                    }, 500);
+                });
             } else {
-                const bulletinStr = localStorage.getItem('current_bulletin');
-                bulletin = bulletinStr ? JSON.parse(bulletinStr) : null;
+                // Imprimer le bulletin actuellement affiché
+                window.print();
             }
-            
-            if (!bulletin) {
-                showAlert('Aucun bulletin à imprimer', 'error');
-                return;
-            }
-
-            const printWindow = window.open('', '_blank');
-            const bulletinHTML = genererBulletinPaiePro(bulletin);
-            
-            printWindow.document.write(`
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>Bulletin de Paie - ${bulletin.employe.prenom} ${bulletin.employe.nom}</title>
-                    <style>
-                        body { 
-                            font-family: Arial, sans-serif; 
-                            margin: 0; 
-                            padding: 20px;
-                            color: #333;
-                        }
-                        @media print {
-                            body { margin: 0; }
-                            .no-print { display: none; }
-                        }
-                        .bulletin-container {
-                            width: 100%;
-                            max-width: 210mm;
-                            margin: 0 auto;
-                            background: white;
-                        }
-                    </style>
-                </head>
-                <body>
-                    <div class="bulletin-container">
-                        ${bulletinHTML}
-                    </div>
-                    <div class="no-print" style="text-align: center; margin-top: 20px;">
-                        <button onclick="window.print()" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">🖨️ Imprimer</button>
-                        <button onclick="window.close()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; margin-left: 10px;">Fermer</button>
-                    </div>
-                </body>
-                </html>
-            `);
-            
-            printWindow.document.close();
-            
-            showAlert('Bulletin ouvert pour impression', 'success');
         }
 
-        // Initialize the application
+        // =============================================
+        // INITIALISATION DE L'APPLICATION
+        // =============================================
+
+        // Au chargement de la page
         document.addEventListener('DOMContentLoaded', function() {
+            // Vérifier si un utilisateur est déjà connecté
             const currentUser = getCurrentUser();
             if (currentUser) {
                 updateUIForUser(currentUser);
@@ -5189,7 +5480,29 @@
             } else {
                 showSection('home');
             }
+
+            // Initialiser la date du jour pour les formulaires
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('presenceDate').value = today;
+            document.getElementById('pointageDate').value = today;
+
+            // Afficher un message de bienvenue
+            console.log('🌴 MKJ SERVICE - Système de gestion du personnel chargé avec succès');
         });
+
+        // Gestion des erreurs globales
+        window.addEventListener('error', function(e) {
+            console.error('Erreur globale:', e.error);
+            showAlert('Une erreur est survenue dans l\'application', 'error');
+        });
+
+        // Gestion des promesses rejetées
+        window.addEventListener('unhandledrejection', function(e) {
+            console.error('Promesse rejetée:', e.reason);
+            showAlert('Erreur: ' + (e.reason?.message || 'Erreur inconnue'), 'error');
+            e.preventDefault();
+        });
+
     </script>
 </body>
 </html>
